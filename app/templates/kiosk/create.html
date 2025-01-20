@@ -6,98 +6,24 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Crear Nuevo Kiosk</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
-                        <!-- Campo oculto para CSRF -->
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        
-                        <!-- Información Básica -->
-                        <div class="mb-4">
-                            <h6 class="mb-3">Información Básica</h6>
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Nombre del Kiosk *</label>
-                                <input type="text" class="form-control" id="name" name="name" required
-                                       placeholder="Ingrese un nombre descriptivo">
-                                <div class="form-text">El nombre debe ser único y descriptivo.</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="location" class="form-label">Ubicación</label>
-                                <input type="text" class="form-control" id="location" name="location"
-                                       placeholder="Ej: Piso 1, Sala A">
-                            </div>
-                        </div>
-
-                        <!-- Información de Hardware -->
-                        <div class="mb-4">
-                            <h6 class="mb-3">Información de Hardware</h6>
-                            <div class="mb-3">
-                                <label for="cpu_model" class="form-label">Modelo de CPU</label>
-                                <input type="text" class="form-control" id="cpu_model" name="cpu_model"
-                                       placeholder="Ej: Intel Core i5-9400">
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="ram_total" class="form-label">RAM Total (GB)</label>
-                                        <input type="number" class="form-control" id="ram_total" name="ram_total"
-                                               step="0.1" min="0" placeholder="Ej: 8.0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="storage_total" class="form-label">Almacenamiento Total (GB)</label>
-                                        <input type="number" class="form-control" id="storage_total" name="storage_total"
-                                               step="0.1" min="0" placeholder="Ej: 500.0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Información de Red -->
-                        <div class="mb-4">
-                            <h6 class="mb-3">Información de Red</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="ip_address" class="form-label">Dirección IP</label>
-                                        <input type="text" class="form-control" id="ip_address" name="ip_address"
-                                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-                                               placeholder="Ej: 192.168.1.100">
-                                        <div class="form-text">Formato IPv4: xxx.xxx.xxx.xxx</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="mac_address" class="form-label">Dirección MAC</label>
-                                        <input type="text" class="form-control" id="mac_address" name="mac_address"
-                                               pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
-                                               placeholder="Ej: 00:1A:2B:3C:4D:5E">
-                                        <div class="form-text">Formato: XX:XX:XX:XX:XX:XX</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Botones -->
-                        <div class="d-flex justify-content-between">
-                            <button type="submit" class="btn btn-primary">
-                                Crear Kiosk
-                            </button>
-                            <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-secondary">
-                                Cancelar
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
+    <h2>Crear Nuevo Kiosk</h2>
+    
+    <form method="POST" class="mt-4">
+        <div class="form-group">
+            <label for="name">Nombre del Kiosk</label>
+            <input type="text" class="form-control" id="name" name="name" required>
         </div>
-    </div>
+        
+        <div class="form-group mt-3">
+            <label for="location">Ubicación</label>
+            <input type="text" class="form-control" id="location" name="location">
+        </div>
+        
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Crear Kiosk</button>
+            <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
 </div>
 {% endblock %}
 

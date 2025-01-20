@@ -100,6 +100,16 @@ def verify_2fa():
     
     return render_template('auth/2fa.html', username=user.username)
 
+@auth_bp.route('/logout')
+@login_required
+def logout():
+    """Vista de cierre de sesión."""
+    username = current_user.username
+    logout_user()
+    logger.info(f'Usuario {username} ha cerrado sesión')
+    flash('Has cerrado sesión exitosamente', 'success')
+    return redirect(url_for('auth.login'))
+
 @auth_bp.route('/setup-2fa', methods=['GET', 'POST'])
 @login_required
 def setup_2fa():

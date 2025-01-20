@@ -6,6 +6,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSON
 from enum import Enum
+from datetime import datetime
 
 class UserRole(str, Enum):
     """Roles de usuario disponibles."""
@@ -24,6 +25,7 @@ class UserPermission(str, Enum):
     MANAGE_SETTINGS = 'manage_settings'
     UPDATE_KIOSK = 'update_kiosk'
     VIEW_KIOSK = 'view_kiosk'
+    CREATE_KIOSK = 'create_kiosk'
 
 class User(db.Model, UserMixin):
     """Modelo de usuario con soporte para autenticación de dos factores."""
@@ -100,4 +102,10 @@ class User(db.Model, UserMixin):
         }
 
     def __repr__(self):
-        return f'<User {self.username}>' 
+        return f'<User {self.username}>'
+
+    def update_last_login(self):
+        """Actualiza la fecha del último login y reinicia los intentos fallidos."""
+        self.last_login = datetime.utcnow()
+        self.failed_login_attempts = 0
+        db.session.commit() 

@@ -50,7 +50,7 @@ class KioskAIService:
             torch.nn.Module: Modelo de IA cargado
         """
         try:
-            model = torch.load(path, map_location=torch.device('cpu'))
+            model = torch.load(path, map_location=torch.device('cpu'), weights_only=True)
             model.eval()  # Modo de evaluación
             return model
         except FileNotFoundError:

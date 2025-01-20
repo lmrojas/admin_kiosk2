@@ -99,4 +99,32 @@ def update_kiosk_location(kiosk_id):
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         logging.error(f"Error actualizando ubicación del kiosk {kiosk_id}: {str(e)}")
-        return jsonify({'error': 'Error interno del servidor'}), 500 
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@kiosk_bp.route('/create', methods=['GET', 'POST'])
+@login_required
+@permission_required(UserPermission.CREATE_KIOSK.value)
+def create_kiosk():
+    """
+    Crear un nuevo kiosk.
+    Requiere permiso: CREATE_KIOSK
+    """
+    if request.method == 'POST':
+        name = request.form.get('name')
+        location = request.form.get('location')
+        
+        try:
+            kiosk = kiosk_service.create_kiosk(
+                name=name,
+                location=location,
+                owner_id=current_user.id
+            )
+            flash('Kiosk creado exitosamente', 'success')
+            return redirect(url_for('kiosk.view_kiosk', kiosk_id=kiosk.id))
+        except ValueError as e:
+            flash(str(e), 'error')
+        except Exception as e:
+            flash('Error al crear el kiosk', 'error')
+            logging.error(f'Error creando kiosk: {str(e)}')
+    
+    return render_template('kiosk/create.html') 

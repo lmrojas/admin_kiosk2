@@ -105,4 +105,13 @@ class KioskService:
         return Kiosk.query.join(SensorData).filter(
             SensorData.timestamp >= threshold_time,
             Kiosk.anomaly_probability > 0.5
-        ).distinct().all() 
+        ).distinct().all()
+
+    @staticmethod
+    def get_all_kiosks():
+        """
+        Obtiene todos los kiosks registrados en el sistema.
+        Returns:
+            List[Kiosk]: Lista de todos los kiosks
+        """
+        return Kiosk.query.all() 
