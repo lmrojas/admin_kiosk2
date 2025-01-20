@@ -1,3 +1,25 @@
+"""
+Script para gestionar el respaldo de logs del sistema.
+
+Funcionalidad:
+- Realiza respaldo automático de logs
+- Comprime logs antiguos
+- Mantiene política de retención configurable
+- Limpia logs antiguos según configuración
+- Verifica integridad de backups
+
+Uso:
+python scripts/backup_logs.py [--retention-days N] [--compress]
+
+Argumentos:
+--retention-days: Días a mantener los logs (default: 30)
+--compress: Comprimir logs antiguos
+
+Notas:
+- Se ejecuta automáticamente vía cron/scheduler
+- Mantiene logs críticos indefinidamente
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y SOLAMENTE
 # SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

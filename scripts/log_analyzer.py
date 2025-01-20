@@ -1,3 +1,27 @@
+"""
+Script para análisis de logs del sistema.
+
+Funcionalidad:
+- Analiza logs de múltiples fuentes
+- Detecta patrones y anomalías
+- Genera reportes de errores
+- Calcula métricas de uso
+- Identifica problemas recurrentes
+
+Uso:
+python scripts/log_analyzer.py [--since FECHA] [--until FECHA]
+
+Argumentos:
+--since: Fecha inicial de análisis
+--until: Fecha final de análisis
+--format: Formato de salida (text/html/json)
+
+Salida:
+- Reporte de errores frecuentes
+- Estadísticas de uso
+- Gráficos de tendencias
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

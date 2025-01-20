@@ -47,10 +47,8 @@ class Kiosk(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relación con Usuario (opcional)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL', use_alter=True, name='fk_kiosk_owner'), nullable=True)
-    owner = relationship('User', 
-                        backref=db.backref('kiosks', lazy='dynamic'),
-                        post_update=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    owner = relationship('User', foreign_keys=[owner_id], back_populates='owned_kiosks')
     
     # Métricas de IA y Salud
     health_score = db.Column(db.Float, default=100.0)

@@ -1,3 +1,26 @@
+"""
+Script para generar datos sintéticos para pruebas y desarrollo.
+
+Funcionalidad:
+- Genera datos realistas de kiosks
+- Simula patrones de uso y comportamiento
+- Crea anomalías controladas para testing
+- Genera series temporales de métricas
+- Exporta datos en múltiples formatos
+
+Uso:
+python scripts/generate_synthetic_data.py [--samples N] [--anomalies]
+
+Argumentos:
+--samples: Número de muestras a generar (default: 1000)
+--anomalies: Incluir anomalías en los datos
+--output: Formato de salida (csv/json)
+
+Notas:
+- Solo para desarrollo y pruebas
+- No usar en producción
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN @cura.md
 # Y @project_custom_structure.txt

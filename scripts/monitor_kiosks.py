@@ -1,3 +1,26 @@
+"""
+Script para monitoreo en tiempo real de kiosks.
+
+Funcionalidad:
+- Monitorea estado de kiosks en tiempo real
+- Recolecta métricas de rendimiento
+- Detecta anomalías y problemas
+- Genera alertas automáticas
+- Mantiene histórico de estados
+
+Uso:
+python scripts/monitor_kiosks.py [--interval SEC]
+
+Argumentos:
+--interval: Intervalo de monitoreo en segundos
+--alert-threshold: Umbral para alertas
+--log-level: Nivel de logging
+
+Notas:
+- Se ejecuta como servicio daemon
+- Integrado con sistema de alertas
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

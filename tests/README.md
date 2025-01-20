@@ -45,7 +45,7 @@ pytest tests/unit/test_user_model.py
 ## Configuración
 
 La configuración de tests se encuentra en `pytest.ini`:
-- Usa base de datos SQLite en memoria
+- Usa base de datos PostgreSQL para pruebas (admin_kiosk2_test)
 - Genera reportes de cobertura
 - Configura opciones de pytest
 

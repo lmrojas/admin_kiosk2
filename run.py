@@ -2,7 +2,6 @@
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 
 from app import create_app, db
-from app.websockets import socketio
 import os
 from config.logging_config import LoggingConfig
 
@@ -26,11 +25,9 @@ if __name__ == '__main__':
     port = int(os.environ.get('FLASK_PORT', 5000))
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
-    # Iniciar servidor con WebSocket
-    socketio.run(
-        app,
+    # Iniciar servidor
+    app.run(
         host=host,
         port=port,
-        debug=debug,
-        use_reloader=debug
+        debug=True
     ) 

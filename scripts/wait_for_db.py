@@ -1,6 +1,19 @@
 """
-Script para esperar a que la base de datos esté lista.
-Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+Script de utilidad para esperar a que la base de datos esté disponible.
+
+Funcionalidad:
+- Intenta conectarse a la base de datos repetidamente
+- Útil para contenedores Docker y despliegues
+- Evita errores de inicio por base de datos no disponible
+- Configurable con variables de entorno
+
+Uso:
+python scripts/wait_for_db.py
+
+Variables de entorno:
+- DB_HOST: Host de la base de datos
+- DB_PORT: Puerto de la base de datos
+- MAX_RETRIES: Número máximo de intentos
 """
 
 import os

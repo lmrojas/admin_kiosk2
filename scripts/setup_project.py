@@ -1,3 +1,27 @@
+"""
+Script para configuración inicial del proyecto.
+
+Funcionalidad:
+- Configura el entorno de desarrollo
+- Instala dependencias necesarias
+- Inicializa base de datos
+- Crea estructura de directorios
+- Configura variables de entorno
+
+Uso:
+python scripts/setup_project.py [--env ENV]
+
+Argumentos:
+--env: Ambiente a configurar (dev/prod)
+--force: Sobrescribir configuración existente
+--skip-deps: Omitir instalación de dependencias
+
+Notas:
+- Ejecutar solo en instalación inicial
+- Requiere permisos de administrador
+- Hacer backup si se ejecuta en sistema existente
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

@@ -1,7 +1,26 @@
 #!/bin/bash
 
-# Script de verificación de salud para Admin Kiosk
-# Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+# Script de verificación de salud del sistema
+#
+# Funcionalidad:
+# - Verifica estado de servicios críticos
+# - Monitorea recursos del sistema
+# - Comprueba conectividad de red
+# - Valida acceso a base de datos
+# - Genera reportes de estado
+#
+# Uso:
+# ./scripts/health_check.sh [--service NOMBRE] [--timeout SEG]
+#
+# Argumentos:
+# --service: Servicio específico a verificar
+# --timeout: Tiempo máximo de espera
+# --verbose: Mostrar información detallada
+#
+# Salida:
+# - Código 0: Todo OK
+# - Código 1: Error en algún servicio
+# - Código 2: Error de configuración
 
 # Validar argumentos
 if [ "$#" -ne 1 ]; then

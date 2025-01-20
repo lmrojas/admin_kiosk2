@@ -1,7 +1,25 @@
 #!/bin/bash
 
-# Script de entrada para Admin Kiosk
-# Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+# Script de punto de entrada para contenedor Docker
+#
+# Funcionalidad:
+# - Inicializa el contenedor Docker
+# - Espera a que la base de datos esté lista
+# - Ejecuta migraciones pendientes
+# - Inicia el servidor de aplicación
+# - Maneja señales de apagado
+#
+# Uso:
+# ./scripts/entrypoint.sh
+#
+# Variables de entorno:
+# - FLASK_APP: Nombre de la aplicación
+# - FLASK_ENV: Ambiente (development/production)
+# - DATABASE_URL: URL de conexión a la base de datos
+#
+# Notas:
+# - Script principal para Docker
+# - No ejecutar directamente en host
 
 set -e
 

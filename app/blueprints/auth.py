@@ -43,7 +43,7 @@ def login():
             
             login_user(user)
             logger.info(f'Usuario {user.username} ha iniciado sesión')
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('main.dashboard'))
             
         except Exception as e:
             logger.error(f'Error en login: {str(e)}')
@@ -56,16 +56,20 @@ def register():
     """Vista de registro de usuarios."""
     if request.method == 'POST':
         username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         
         try:
-            user = auth_service.register_user(username, password)
+            user = auth_service.register_user(username, email, password)
             if user:
                 flash('Usuario registrado exitosamente', 'success')
                 logger.info(f'Nuevo usuario registrado: {username}')
                 return redirect(url_for('auth.login'))
             else:
                 flash('Error al registrar usuario', 'error')
+        except ValueError as e:
+            flash(str(e), 'error')
+            logger.warning(f'Error de validación en registro: {str(e)}')
         except Exception as e:
             logger.error(f'Error en registro: {str(e)}')
             flash('Error en el proceso de registro', 'error')

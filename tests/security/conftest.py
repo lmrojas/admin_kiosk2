@@ -17,7 +17,7 @@ def app():
     # Configurar la app para testing
     app.config.update({
         'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SQLALCHEMY_DATABASE_URI': 'postgresql://postgres:postgres@localhost/admin_kiosk2_test',
         'WTF_CSRF_ENABLED': True,
         'SECURITY_PASSWORD_SALT': 'test-salt'
     })

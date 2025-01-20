@@ -1,6 +1,30 @@
 """
-Script de backup automático para Admin Kiosk.
-Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+Script para crear y gestionar copias de seguridad del sistema.
+
+Funcionalidad:
+- Crea backups completos del sistema
+- Gestiona puntos de restauración
+- Comprime y archiva backups
+- Verifica integridad de copias
+- Mantiene historial de backups
+
+Uso:
+python scripts/rollback/backup.py [--type TIPO]
+
+Argumentos:
+--type: Tipo de backup (full/incremental)
+--compress: Comprimir backup
+--verify: Verificar integridad
+
+Salida:
+- Archivo de backup (.tar.gz)
+- Registro de metadatos
+- Log de operación
+
+Notas:
+- Programar backups periódicos
+- Verificar espacio disponible
+- Rotar backups antiguos
 """
 
 import os

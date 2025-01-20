@@ -1,3 +1,24 @@
+"""
+Este script inicializa los datos básicos necesarios para el funcionamiento del sistema.
+
+Funcionalidad:
+- Inicializa los permisos del sistema con sus descripciones
+- Configura los roles y sus permisos asociados
+- Crea el usuario administrador inicial (si no existe)
+  - Username: admin
+  - Password: admin123
+  - Email: admin@example.com
+  - Rol: ADMIN
+
+Uso:
+python scripts/init_data.py
+
+Notas:
+- Debe ejecutarse después de init_roles.py
+- Crea solo el usuario admin si no existe
+- No modifica usuarios existentes
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

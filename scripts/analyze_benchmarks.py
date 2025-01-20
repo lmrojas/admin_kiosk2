@@ -1,6 +1,28 @@
 #!/usr/bin/env python
 # Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
 
+"""
+Script para analizar y comparar benchmarks del sistema.
+
+Funcionalidad:
+- Ejecuta pruebas de rendimiento estandarizadas
+- Compara resultados con benchmarks anteriores
+- Analiza impacto de cambios en el rendimiento
+- Detecta regresiones de rendimiento
+- Genera reportes comparativos
+
+Uso:
+python scripts/analyze_benchmarks.py [--compare-with FECHA]
+
+Argumentos:
+--compare-with: Fecha del benchmark anterior (formato: YYYY-MM-DD)
+
+Salida:
+- Reporte detallado de comparación
+- Gráficos de tendencias
+- Alertas de regresiones significativas
+"""
+
 import os
 import json
 import logging

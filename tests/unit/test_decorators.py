@@ -14,7 +14,7 @@ def app():
     app = Flask(__name__)
     app.config['TESTING'] = True
     app.config['SECRET_KEY'] = 'test-key'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost/admin_kiosk2_test'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     with app.app_context():

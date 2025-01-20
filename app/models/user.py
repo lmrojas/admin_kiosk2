@@ -28,6 +28,8 @@ class UserPermission(str, Enum):
 class User(db.Model, UserMixin):
     """Modelo de usuario con soporte para autenticación de dos factores."""
     
+    __tablename__ = 'users'
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -45,6 +47,9 @@ class User(db.Model, UserMixin):
     last_login = db.Column(db.DateTime)
     failed_login_attempts = db.Column(db.Integer, default=0)
     account_locked = db.Column(db.Boolean, default=False)
+    
+    # Relación con Kiosks
+    owned_kiosks = db.relationship('Kiosk', back_populates='owner', lazy='dynamic')
     
     def set_password(self, password):
         """Establece el hash de la contraseña."""

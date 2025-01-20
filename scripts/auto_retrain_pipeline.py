@@ -1,3 +1,26 @@
+"""
+Script para el pipeline de reentrenamiento automático de modelos.
+
+Funcionalidad:
+- Monitorea rendimiento de modelos en producción
+- Detecta degradación del rendimiento
+- Recolecta nuevos datos de entrenamiento
+- Ejecuta reentrenamiento automático
+- Valida y despliega nuevos modelos
+
+Uso:
+python scripts/auto_retrain_pipeline.py [--threshold SCORE]
+
+Argumentos:
+--threshold: Umbral de rendimiento para reentrenamiento
+--force: Forzar reentrenamiento
+--dry-run: Simular sin aplicar cambios
+
+Notas:
+- Se ejecuta periódicamente vía scheduler
+- Requiere acceso a datos de producción
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN @cura.md
 # Y @project_custom_structure.txt

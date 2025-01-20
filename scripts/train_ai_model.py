@@ -1,3 +1,27 @@
+"""
+Script para entrenar el modelo de IA del sistema.
+
+Funcionalidad:
+- Entrena modelos de detección de anomalías
+- Procesa datos históricos de kiosks
+- Optimiza hiperparámetros del modelo
+- Evalúa rendimiento del modelo
+- Guarda checkpoints del entrenamiento
+
+Uso:
+python scripts/train_ai_model.py [--epochs N] [--batch-size N]
+
+Argumentos:
+--epochs: Número de épocas de entrenamiento (default: 100)
+--batch-size: Tamaño del batch (default: 32)
+--data-dir: Directorio con datos de entrenamiento
+
+Salida:
+- Modelo entrenado (.pth)
+- Métricas de entrenamiento
+- Gráficos de convergencia
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN @cura.md
 # Y @project_custom_structure.txt

@@ -13,7 +13,7 @@ from app.services.auth_service import AuthService
 @pytest.fixture(scope="module")
 def db_session():
     """Fixture para crear una sesión de base de datos para pruebas."""
-    engine = create_engine('postgresql://test_user:test_password@localhost/test_db')
+    engine = create_engine('postgresql://postgres:postgres@localhost/admin_kiosk2_test')
     Session = sessionmaker(bind=engine)
     session = Session()
     

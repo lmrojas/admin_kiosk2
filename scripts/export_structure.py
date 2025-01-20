@@ -1,3 +1,26 @@
+"""
+Script para exportar la estructura del proyecto.
+
+Funcionalidad:
+- Genera documentación de la estructura del proyecto
+- Mapea relaciones entre módulos y componentes
+- Documenta dependencias y flujos de datos
+- Genera diagramas de arquitectura
+- Exporta métricas de código
+
+Uso:
+python scripts/export_structure.py [--format FORMAT] [--output DIR]
+
+Argumentos:
+--format: Formato de salida (md/html/json) (default: md)
+--output: Directorio de salida (default: docs/structure)
+
+Salida:
+- Documentación detallada de la estructura
+- Diagramas de arquitectura
+- Métricas del proyecto
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN @cura.md
 # Y @project_custom_structure.txt

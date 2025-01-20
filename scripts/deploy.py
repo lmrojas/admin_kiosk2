@@ -1,3 +1,27 @@
+"""
+Script para automatizar el despliegue del sistema.
+
+Funcionalidad:
+- Automatiza proceso de despliegue
+- Verifica dependencias y requisitos
+- Ejecuta migraciones de base de datos
+- Actualiza configuraciones
+- Reinicia servicios necesarios
+
+Uso:
+python scripts/deploy.py [--env ENV]
+
+Argumentos:
+--env: Ambiente de despliegue (prod/staging)
+--rollback: Revertir último despliegue
+--dry-run: Simular sin aplicar cambios
+
+Notas:
+- Requiere configuración de ambiente
+- Hacer backup antes de desplegar
+- Verificar logs post-despliegue
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

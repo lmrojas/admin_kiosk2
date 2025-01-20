@@ -4,7 +4,7 @@
 import os
 import sys
 from flask import Flask
-from flask_migrate import Migrate, init, migrate, upgrade
+from flask_migrate import Migrate
 from app import create_app, db
 
 def initialize_migrations():
@@ -20,15 +20,15 @@ def initialize_migrations():
         try:
             # Inicializar directorio de migraciones si no existe
             if not os.path.exists('migrations'):
-                init()
+                os.system('flask db init')
                 print("✅ Directorio de migraciones inicializado")
             
             # Generar migración inicial
-            migrate(message="Migración inicial de modelos")
+            os.system('flask db migrate -m "Migración inicial de modelos"')
             print("✅ Migración generada exitosamente")
             
             # Aplicar migración
-            upgrade()
+            os.system('flask db upgrade')
             print("✅ Migración aplicada exitosamente")
             
         except Exception as e:

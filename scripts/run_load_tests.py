@@ -1,6 +1,28 @@
 #!/usr/bin/env python
 # Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
 
+"""
+Script para ejecutar pruebas de carga en el sistema.
+
+Funcionalidad:
+- Simula múltiples usuarios concurrentes
+- Prueba diferentes endpoints de la API
+- Mide tiempos de respuesta y rendimiento
+- Genera reportes detallados de resultados
+- Detecta cuellos de botella y límites del sistema
+
+Uso:
+python scripts/run_load_tests.py [--users N] [--time T]
+
+Argumentos:
+--users: Número de usuarios concurrentes (default: 100)
+--time: Duración de la prueba en segundos (default: 300)
+
+Notas:
+- Requiere que el sistema esté en ejecución
+- No ejecutar en producción sin precaución
+"""
+
 import os
 import json
 import logging

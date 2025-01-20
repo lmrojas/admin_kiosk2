@@ -1,3 +1,27 @@
+"""
+Script para recuperación ante desastres del sistema.
+
+Funcionalidad:
+- Ejecuta procedimientos de recuperación
+- Restaura backups de base de datos
+- Verifica integridad de datos
+- Reconstruye índices y cachés
+- Sincroniza estados del sistema
+
+Uso:
+python scripts/disaster_recovery.py [--mode MODE]
+
+Argumentos:
+--mode: Modo de recuperación (full/partial)
+--backup-date: Fecha del backup a restaurar
+--verify: Solo verificar sin restaurar
+
+Notas:
+- Requiere privilegios administrativos
+- Documentar cada ejecución
+- Seguir procedimientos de emergencia
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

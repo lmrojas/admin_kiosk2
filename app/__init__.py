@@ -15,7 +15,7 @@ migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'info'
-socketio = SocketIO()
+socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet')
 
 def create_app(config_name='development'):
     app = Flask(__name__)
@@ -43,21 +43,24 @@ def create_app(config_name='development'):
     
     # Importar e inicializar websockets
     from .websockets import init_websockets
-    init_websockets(socketio)
     socketio.init_app(app)
+    init_websockets(socketio)
     
     # Registrar blueprints
     from .blueprints.auth import auth_bp
-    from .blueprints.main import main_bp
     from .blueprints.kiosk import kiosk_bp
-    from .blueprints.monitor import monitor_bp
     from .blueprints.ai import ai_bp
+    from .blueprints.monitor import monitor_bp
+    from .blueprints.main import main_bp
     
-    app.register_blueprint(auth_bp)
+    # Registrar blueprint main primero (sin prefijo)
     app.register_blueprint(main_bp)
-    app.register_blueprint(kiosk_bp)
-    app.register_blueprint(monitor_bp)
-    app.register_blueprint(ai_bp)
+    
+    # Registrar otros blueprints con sus prefijos
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(kiosk_bp, url_prefix='/kiosk')
+    app.register_blueprint(ai_bp, url_prefix='/ai')
+    app.register_blueprint(monitor_bp, url_prefix='/monitor')
     
     # Manejadores de error
     @app.errorhandler(404)

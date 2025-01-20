@@ -1,3 +1,20 @@
+"""
+Este script crea kiosks de prueba para desarrollo y testing.
+
+Funcionalidad:
+- Genera kiosks con datos aleatorios pero realistas
+- Crea ubicaciones geográficas distribuidas
+- Simula estados y métricas de los kiosks
+- Útil para pruebas y desarrollo local
+
+Uso:
+python scripts/create_test_kiosks.py [número_de_kiosks]
+
+Notas:
+- Los datos generados son solo para pruebas
+- No usar en producción
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 

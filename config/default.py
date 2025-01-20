@@ -12,9 +12,15 @@ class Config:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-highly-secret'
     
-    # Configuración de base de datos
+    # Configuración de base de datos PostgreSQL
+    DB_USER = os.environ.get('DB_USER', 'postgres')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'postgres')
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
+    DB_PORT = os.environ.get('DB_PORT', '5432')
+    DB_NAME = os.environ.get('DB_NAME', 'admin_kiosk2')
+    
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(BASE_DIR, '../instance/app.db')
+        f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Configuración de Redis
@@ -98,21 +104,22 @@ class Config:
 class DevelopmentConfig(Config):
     """Configuración de desarrollo."""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@" \
-        f"{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT')}/{os.environ.get('DB_NAME')}"
+    # Usar la misma configuración PostgreSQL que la clase base
+    pass
 
 class TestingConfig(Config):
     """Configuración de pruebas."""
     TESTING = True
+    # Base de datos PostgreSQL para pruebas
+    DB_NAME = os.environ.get('DB_NAME', 'admin_kiosk2_test')
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-        f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@" \
-        f"{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT')}/admin_kiosk2_test"
+        f"postgresql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}:{Config.DB_PORT}/{DB_NAME}"
     WTF_CSRF_ENABLED = False
 
 class ProductionConfig(Config):
     """Configuración de producción."""
     DEBUG = False
+    # Usar la URL de base de datos de producción
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
 config = {

@@ -1,6 +1,28 @@
 #!/usr/bin/env python
 # Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
 
+"""
+Script para analizar el rendimiento del sistema.
+
+Funcionalidad:
+- Analiza logs de rendimiento y métricas
+- Identifica patrones de uso y cuellos de botella
+- Genera gráficos y reportes de rendimiento
+- Calcula estadísticas de uso de recursos
+- Proporciona recomendaciones de optimización
+
+Uso:
+python scripts/analyze_performance.py [--days N]
+
+Argumentos:
+--days: Número de días a analizar (default: 7)
+
+Salida:
+- Genera reportes en formato HTML y PDF
+- Crea gráficos de tendencias
+- Exporta datos en CSV para análisis adicional
+"""
+
 import os
 import json
 import logging

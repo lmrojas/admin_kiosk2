@@ -19,7 +19,7 @@
         "host": "localhost",
         "user": "local_dev",
         "path": "./deploy/development",
-        "database_url": "sqlite:///dev_kiosk.db",
+        "database_url": "postgresql://postgres:postgres@localhost/admin_kiosk2_dev",
         "debug": true,
         "secret_key_length": 16
     }

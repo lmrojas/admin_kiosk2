@@ -1,6 +1,25 @@
 """
-Script de rollback para Admin Kiosk.
-Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+Script para revertir cambios y restaurar versiones anteriores.
+
+Funcionalidad:
+- Revierte cambios en base de datos
+- Restaura archivos de configuración
+- Maneja puntos de restauración
+- Verifica integridad de backups
+- Registra historial de rollbacks
+
+Uso:
+python scripts/rollback/rollback.py [--version VERSION]
+
+Argumentos:
+--version: Versión específica a restaurar
+--type: Tipo de rollback (full/partial)
+--force: Forzar rollback sin confirmación
+
+Notas:
+- Requiere backup previo
+- Verificar dependencias antes de rollback
+- Documentar razón del rollback
 """
 
 import os

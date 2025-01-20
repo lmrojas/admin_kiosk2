@@ -1,3 +1,26 @@
+"""
+Script para inicializar y ejecutar migraciones de base de datos.
+
+Funcionalidad:
+- Inicializa el sistema de migraciones
+- Crea migraciones iniciales
+- Ejecuta migraciones pendientes
+- Verifica estado de la base de datos
+- Permite rollback de migraciones
+
+Uso:
+python scripts/init_migrations.py [--upgrade/--downgrade]
+
+Argumentos:
+--upgrade: Aplicar migraciones pendientes
+--downgrade: Revertir última migración
+--revision: Crear nueva revisión
+
+Notas:
+- Ejecutar después de cambios en modelos
+- Hacer backup antes de migrar en producción
+"""
+
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN @cura.md
 # Y @project_custom_structure.txt

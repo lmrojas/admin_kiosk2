@@ -17,6 +17,10 @@ from app import create_app, db
 def app():
     """Fixture que proporciona una aplicación Flask de prueba"""
     # Configurar base de datos de prueba
+    os.environ['DB_USER'] = 'postgres'
+    os.environ['DB_PASSWORD'] = 'postgres'
+    os.environ['DB_HOST'] = 'localhost'
+    os.environ['DB_PORT'] = '5432'
     os.environ['DB_NAME'] = 'admin_kiosk2_test'
     
     # Crear aplicación con configuración de prueba
@@ -24,7 +28,10 @@ def app():
     
     # Establecer contexto de aplicación
     with app.app_context():
+        db.create_all()
         yield app
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def client(app):
