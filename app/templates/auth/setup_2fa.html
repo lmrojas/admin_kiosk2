@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Configurar Autenticación de Dos Factores{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Configurar Autenticación de Dos Factores
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Sigue los pasos para activar la autenticación de dos factores
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Paso 1: Escanea el código QR</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Usa una aplicación de autenticación como Google Authenticator o Authy para escanear este código QR
+                    </p>
+                    <div class="mt-4 flex justify-center">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="Código QR para 2FA">
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Paso 2: Ingresa el código</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Ingresa el código de 6 dígitos que aparece en tu aplicación de autenticación
+                    </p>
+                    <form class="mt-4" action="{{ url_for('auth.setup_2fa') }}" method="POST">
+                        <div>
+                            <label for="code" class="sr-only">Código de verificación</label>
+                            <input id="code" name="code" type="text" required
+                                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                placeholder="Ingresa el código de 6 dígitos">
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit"
+                                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Verificar y Activar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">
+                            Información importante
+                        </span>
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-500">
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>La autenticación de dos factores agrega una capa adicional de seguridad a tu cuenta.</li>
+                        <li>Necesitarás ingresar un código cada vez que inicies sesión.</li>
+                        <li>Guarda los códigos de respaldo en un lugar seguro en caso de perder acceso a tu dispositivo.</li>
+                        <li>Puedes desactivar 2FA en cualquier momento desde la configuración de tu cuenta.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

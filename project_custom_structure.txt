@@ -1,0 +1,237 @@
+# Estructura del Proyecto
+# Última actualización: 2025-01-20 14:12:00
+#
+# ADVERTENCIA: Este archivo es generado automáticamente.
+# NO MODIFICAR MANUALMENTE.
+#
+# Para actualizar, ejecutar:
+# python scripts/export_structure.py
+#
+# Símbolos:
+# [dir]  - Directorio
+# [file] - Archivo
+#
+# Reglas:
+# 1. Cualquier modificación a la estructura del proyecto debe:
+#    a) Seguir las guías en @cura.md
+#    b) Actualizar este archivo ejecutando el script
+# 2. Los archivos ignorados no aparecen en esta estructura
+# 3. Las rutas son relativas al directorio raíz del proyecto
+#
+# Base de Datos:
+# - Tablas principales:
+#   - users: Almacena usuarios con soporte para 2FA
+#   - kiosks: Almacena información de kiosks con geolocalización
+#   - sensor_data: Datos de sensores de los kiosks
+#   - model_metrics: Métricas del modelo de IA
+#   - prediction_logs: Logs de predicciones del modelo
+#   - drift_metrics: Métricas de drift del modelo
+#
+# Última migración: 2025-01-20 14:10:36 - "initial migration"
+[file] Dockerfile (1.1KB, 47 lines) - Jan 18, 10:34 PM
+[file] GUIA_DESARROLLADOR_KIOSK_SISTEMA.md (19.1KB, 606 lines) - Jan 16, 10:05 PM
+[dir]  app/ (? items) - Jan 16, 05:43 PM
+  [file] __init__.py (2.3KB, 74 lines) - Jan 20, 02:01 PM
+  [dir]  blueprints/ (? items) - Jan 16, 05:43 PM
+    [file] ai.py (1.4KB, 45 lines) - Jan 19, 12:56 AM
+    [file] auth.py (7.6KB, 199 lines) - Jan 20, 01:51 PM
+    [file] kiosk.py (3.5KB, 102 lines) - Jan 18, 02:25 AM
+    [file] main.py (2.4KB, 66 lines) - Jan 16, 06:59 PM
+    [file] monitor.py (1.9KB, 54 lines) - Jan 17, 03:25 AM
+  [dir]  config/ (? items) - Jan 18, 01:14 AM
+    [file] alerts.json (1.6KB, 50 lines) - Jan 18, 01:18 AM
+    [file] security_config.py (2.9KB, 110 lines) - Jan 18, 09:43 PM
+  [dir]  logs/ (? items) - Jan 17, 02:14 AM
+    [file] admin_kiosk_2025-01-17.log (2.3KB, 0 lines) - Jan 17, 02:58 AM
+    [file] admin_kiosk_2025-01-19.log (2.0KB, 0 lines) - Jan 19, 01:27 AM
+    [file] admin_kiosk_2025-01-20.log (4.9KB, 0 lines) - Jan 20, 02:10 PM
+  [dir]  middleware/ (? items) - Jan 17, 10:37 PM
+    [file] input_validation.py (7.5KB, 206 lines) - Jan 18, 09:48 PM
+    [file] security.py (5.3KB, 141 lines) - Jan 18, 11:03 PM
+    [file] security_middleware.py (3.0KB, 85 lines) - Jan 18, 09:26 PM
+    [file] security_monitoring.py (8.2KB, 226 lines) - Jan 18, 09:48 PM
+  [dir]  models/ (? items) - Jan 16, 05:43 PM
+    [file] ai.py (2.2KB, 52 lines) - Jan 19, 01:04 AM
+    [file] kiosk.py (4.9KB, 132 lines) - Jan 20, 02:10 PM
+    [file] security.py (5.6KB, 182 lines) - Jan 18, 11:05 PM
+    [file] user.py (3.8KB, 98 lines) - Jan 18, 02:14 AM
+  [dir]  routes/ (? items) - Jan 18, 01:26 AM
+    [file] dashboard.py (3.2KB, 92 lines) - Jan 18, 01:31 AM
+    [file] kiosk.py (2.2KB, 60 lines) - Jan 18, 01:58 AM
+  [dir]  services/ (? items) - Jan 16, 05:43 PM
+    [file] ai_metrics.py (13.5KB, 341 lines) - Jan 18, 11:34 PM
+    [file] auth_service.py (7.0KB, 212 lines) - Jan 19, 12:46 AM
+    [file] backup_service.py (7.1KB, 198 lines) - Jan 18, 01:24 AM
+    [file] cache_service.py (7.6KB, 238 lines) - Jan 18, 10:01 PM
+    [file] dashboard_service.py (5.0KB, 144 lines) - Jan 18, 01:26 AM
+    [file] geolocation_service.py (5.7KB, 171 lines) - Jan 18, 01:49 AM
+    [file] kiosk_ai_service.py (4.2KB, 130 lines) - Jan 17, 01:50 AM
+    [file] kiosk_service.py (3.6KB, 108 lines) - Jan 17, 01:50 AM
+    [file] logging_service.py (6.2KB, 179 lines) - Jan 18, 11:54 PM
+    [file] monitoring_service.py (8.6KB, 243 lines) - Jan 18, 11:55 PM
+    [file] notification_service.py (10.1KB, 308 lines) - Jan 18, 11:53 PM
+    [file] security.py (8.7KB, 236 lines) - Jan 18, 11:05 PM
+    [file] security_service.py (5.5KB, 167 lines) - Jan 18, 02:22 AM
+    [file] two_factor_service.py (8.3KB, 256 lines) - Jan 18, 09:24 PM
+  [dir]  static/ (? items) - Jan 18, 11:25 PM
+    [dir]  css/ (? items) - Jan 18, 11:25 PM
+      [file] ai_dashboard.css (4.1KB, 239 lines) - Jan 18, 11:27 PM
+    [dir]  js/ (? items) - Jan 18, 11:26 PM
+      [file] ai_dashboard.js (10.0KB, 317 lines) - Jan 18, 11:27 PM
+  [dir]  templates/ (? items) - Jan 16, 05:43 PM
+    [dir]  ai/ (? items) - Jan 18, 11:25 PM
+      [file] dashboard.html (6.5KB, 174 lines) - Jan 18, 11:27 PM
+    [dir]  auth/ (? items) - Jan 16, 05:45 PM
+      [file] 2fa.html (4.0KB, 96 lines) - Jan 18, 02:33 AM
+      [file] backup_codes.html (3.9KB, 95 lines) - Jan 18, 02:33 AM
+      [file] change_password.html (1.8KB, 39 lines) - Jan 16, 06:09 PM
+      [file] login.html (1.5KB, 35 lines) - Jan 16, 06:09 PM
+      [file] register.html (2.0KB, 43 lines) - Jan 16, 06:09 PM
+      [file] setup_2fa.html (3.9KB, 74 lines) - Jan 18, 02:33 AM
+      [file] users.html (5.8KB, 132 lines) - Jan 17, 02:05 AM
+    [file] base.html (1.9KB, 43 lines) - Jan 16, 06:09 PM
+    [dir]  dashboard/ (? items) - Jan 18, 01:27 AM
+      [file] base.html (5.6KB, 111 lines) - Jan 18, 01:31 AM
+      [file] index.html (8.0KB, 213 lines) - Jan 18, 01:31 AM
+      [file] logs.html (15.2KB, 366 lines) - Jan 18, 01:31 AM
+      [file] security.html (16.5KB, 390 lines) - Jan 18, 01:33 AM
+    [dir]  errors/ (? items) - Jan 19, 12:34 AM
+      [file] 404.html (594B, 15 lines) - Jan 19, 12:34 AM
+      [file] 500.html (800B, 18 lines) - Jan 19, 12:38 AM
+    [dir]  kiosk/ (? items) - Jan 16, 05:50 PM
+      [file] create.html (6.6KB, 130 lines) - Jan 17, 01:53 AM
+      [file] details.html (10.9KB, 264 lines) - Jan 18, 01:58 AM
+      [file] list.html (7.5KB, 173 lines) - Jan 17, 01:53 AM
+      [file] map.html (6.7KB, 195 lines) - Jan 18, 01:58 AM
+      [file] update.html (10.9KB, 202 lines) - Jan 17, 01:53 AM
+    [dir]  main/ (? items) - Jan 16, 05:48 PM
+      [file] dashboard.html (8.3KB, 236 lines) - Jan 17, 02:02 AM
+      [file] edit_profile.html (2.6KB, 54 lines) - Jan 16, 06:59 PM
+      [file] index.html (2.0KB, 46 lines) - Jan 16, 06:59 PM
+      [file] profile.html (3.2KB, 68 lines) - Jan 16, 06:59 PM
+    [dir]  monitor/ (? items) - Jan 17, 03:25 AM
+      [file] dashboard.html (8.0KB, 231 lines) - Jan 17, 03:26 AM
+  [dir]  utils/ (? items) - Jan 16, 05:43 PM
+    [file] decorators.py (6.4KB, 170 lines) - Jan 18, 02:24 AM
+  [dir]  views/ (? items) - Jan 18, 11:28 PM
+    [file] ai_dashboard.py (3.5KB, 89 lines) - Jan 18, 11:31 PM
+  [file] websockets.py (4.8KB, 152 lines) - Jan 19, 12:53 AM
+[file] backup_admin_kiosk2_.sql (29.0KB, 0 lines) - Jan 20, 02:12 PM
+[file] backup_admin_kiosk2_initial.sql (29.0KB, 0 lines) - Jan 20, 02:12 PM
+[dir]  config/ (? items) - Jan 16, 05:43 PM
+  [file] default.py (4.8KB, 123 lines) - Jan 19, 12:05 AM
+  [file] deployment.json (857B, 26 lines) - Jan 16, 07:39 PM
+  [file] logging_config.py (4.4KB, 125 lines) - Jan 16, 07:29 PM
+  [dir]  security/ (? items) - Jan 18, 11:02 PM
+    [file] hardening.py (4.8KB, 154 lines) - Jan 18, 11:03 PM
+[file] create_test_dirs.py (745B, 23 lines) - Jan 16, 07:05 PM
+[file] cura.md (13.8KB, 266 lines) - Jan 16, 05:43 PM
+[dir]  data/ (? items) - Jan 17, 02:54 AM
+  [dir]  real/ (? items) - Jan 17, 02:54 AM
+  [dir]  synthetic/ (? items) - Jan 17, 02:54 AM
+    [file] synthetic_data_20250117_025612.csv (825.9KB, 10001 lines) - Jan 17, 02:56 AM
+[dir]  docs/ (? items) - Jan 16, 07:40 PM
+  [file] CICD.md (2.4KB, 83 lines) - Jan 16, 08:02 PM
+  [file] LOGGING.md (3.3KB, 146 lines) - Jan 18, 01:12 AM
+  [dir]  api/ (? items) - Jan 18, 10:56 PM
+    [file] README.md (3.3KB, 217 lines) - Jan 18, 11:01 PM
+  [dir]  maintenance/ (? items) - Jan 18, 10:57 PM
+    [file] README.md (3.7KB, 204 lines) - Jan 18, 11:01 PM
+  [dir]  technical/ (? items) - Jan 18, 10:56 PM
+    [file] architecture.md (3.1KB, 114 lines) - Jan 18, 11:01 PM
+  [dir]  user/ (? items) - Jan 18, 10:57 PM
+    [file] manual.md (3.8KB, 179 lines) - Jan 18, 11:01 PM
+[file] init_migrations.py (1.3KB, 39 lines) - Jan 16, 07:04 PM
+[dir]  instance/ (? items) - Jan 17, 02:14 AM
+  [file] app.db (56.0KB, 0 lines) - Jan 17, 02:30 AM
+  [file] dev.db (60.0KB, 0 lines) - Jan 18, 11:56 PM
+  [file] kiosk.db (60.0KB, 0 lines) - Jan 17, 02:41 AM
+[dir]  logs/ (? items) - Jan 19, 12:38 AM
+  [file] admin_kiosk.log (2.5KB, 34 lines) - Jan 19, 12:46 AM
+  [file] admin_kiosk.log.1 (8.4KB, 105 lines) - Jan 19, 12:44 AM
+  [file] admin_kiosk.log.2 (8.8KB, 107 lines) - Jan 19, 12:38 AM
+[dir]  migrations/ (? items) - Jan 20, 02:09 PM
+  [file] README (41B, 1 lines) - Jan 20, 02:09 PM
+  [file] alembic.ini (857B, 50 lines) - Jan 20, 02:09 PM
+  [file] script.py.mako (494B, 24 lines) - Jan 20, 02:09 PM
+  [dir]  versions/ (? items) - Jan 20, 02:09 PM
+    [file] 0db44f6c341e_initial_migration.py (6.0KB, 122 lines) - Jan 20, 02:10 PM
+[dir]  models/ (? items) - Jan 17, 02:54 AM
+  [file] kiosk_anomaly_model_20250117_025703.pth (5.0KB, 0 lines) - Jan 17, 02:57 AM
+  [file] kiosk_anomaly_model_20250117_025825.pth (5.0KB, 0 lines) - Jan 17, 02:58 AM
+  [file] metrics_20250117_025703.txt (80B, 4 lines) - Jan 17, 02:57 AM
+[file] project_custom_structure.txt (12.9KB, 224 lines) - Jan 20, 01:37 PM
+[file] pytest.ini (738B, 34 lines) - Jan 16, 07:07 PM
+[file] requirements.txt (1.8KB, 0 lines) - Jan 18, 08:31 PM
+[file] run.py (976B, 36 lines) - Jan 17, 02:02 AM
+[dir]  scripts/ (? items) - Jan 16, 05:43 PM
+  [file] README_DISASTER_RECOVERY.md (2.3KB, 82 lines) - Jan 16, 08:02 PM
+  [file] README_KIOSK_MANAGEMENT.md (2.7KB, 96 lines) - Jan 16, 08:06 PM
+  [file] analyze_benchmarks.py (4.9KB, 137 lines) - Jan 18, 09:11 PM
+  [file] analyze_performance.py (4.0KB, 107 lines) - Jan 18, 09:11 PM
+  [file] auto_retrain_pipeline.py (6.9KB, 190 lines) - Jan 17, 02:51 AM
+  [file] backup_logs.py (4.5KB, 134 lines) - Jan 18, 01:24 AM
+  [file] create_test_kiosks.py (3.0KB, 82 lines) - Jan 19, 12:30 AM
+  [file] deploy.py (7.2KB, 208 lines) - Jan 16, 07:39 PM
+  [file] disaster_recovery.py (8.3KB, 238 lines) - Jan 16, 08:02 PM
+  [file] entrypoint.sh (798B, 31 lines) - Jan 18, 10:34 PM
+  [file] export_structure.py (6.0KB, 204 lines) - Jan 17, 02:53 AM
+  [file] generate_synthetic_data.py (6.1KB, 179 lines) - Jan 17, 02:51 AM
+  [file] health_check.sh (1.3KB, 52 lines) - Jan 18, 10:33 PM
+  [file] init_data.py (4.1KB, 123 lines) - Jan 20, 02:04 PM
+  [file] init_migrations.py (2.8KB, 84 lines) - Jan 17, 02:41 AM
+  [file] init_roles.py (3.3KB, 98 lines) - Jan 18, 01:04 AM
+  [file] kiosk_management.py (7.3KB, 193 lines) - Jan 16, 08:06 PM
+  [file] log_analyzer.py (6.7KB, 200 lines) - Jan 16, 07:38 PM
+  [file] monitor_kiosks.py (7.1KB, 206 lines) - Jan 16, 08:02 PM
+  [dir]  rollback/ (? items) - Jan 18, 11:10 PM
+    [file] backup.py (9.1KB, 252 lines) - Jan 18, 11:24 PM
+    [file] rollback.py (10.0KB, 263 lines) - Jan 18, 11:24 PM
+  [file] run_load_tests.py (7.1KB, 199 lines) - Jan 18, 09:24 PM
+  [file] setup_project.py (4.0KB, 117 lines) - Jan 16, 07:38 PM
+  [file] train_ai_model.py (8.3KB, 239 lines) - Jan 17, 02:53 AM
+  [file] wait_for_db.py (1.4KB, 41 lines) - Jan 18, 10:34 PM
+[dir]  tests/ (? items) - Jan 16, 05:43 PM
+  [file] README.md (1.1KB, 63 lines) - Jan 16, 07:07 PM
+  [file] conftest.py (879B, 32 lines) - Jan 17, 02:47 AM
+  [dir]  e2e/ (? items) - Jan 16, 07:05 PM
+    [file] __init__.py (23B, 1 lines) - Jan 16, 07:05 PM
+    [file] test_kiosk_management_flow.py (5.1KB, 171 lines) - Jan 16, 07:26 PM
+  [dir]  integration/ (? items) - Jan 16, 05:43 PM
+    [file] __init__.py (23B, 1 lines) - Jan 16, 07:05 PM
+    [file] test_ai_flow.py (6.6KB, 185 lines) - Jan 18, 09:58 PM
+    [file] test_auth_flow.py (5.9KB, 160 lines) - Jan 18, 09:58 PM
+    [file] test_auth_integration.py (3.6KB, 125 lines) - Jan 16, 07:08 PM
+    [file] test_cache_flow.py (7.6KB, 204 lines) - Jan 18, 10:26 PM
+    [file] test_kiosk_flow.py (6.2KB, 173 lines) - Jan 18, 09:58 PM
+    [file] test_kiosk_integration.py (4.7KB, 154 lines) - Jan 16, 07:26 PM
+    [file] test_logging_integration.py (6.2KB, 162 lines) - Jan 18, 01:13 AM
+    [file] test_monitoring_integration.py (6.0KB, 153 lines) - Jan 18, 01:18 AM
+  [dir]  load/ (? items) - Jan 18, 02:33 AM
+    [file] test_load.py (4.4KB, 107 lines) - Jan 18, 08:32 PM
+  [dir]  performance/ (? items) - Jan 18, 09:07 PM
+    [file] test_api.py (4.9KB, 147 lines) - Jan 18, 09:24 PM
+    [file] test_cache.py (5.4KB, 172 lines) - Jan 18, 09:11 PM
+    [file] test_database.py (4.0KB, 133 lines) - Jan 18, 09:11 PM
+    [file] test_db_optimizations.py (6.4KB, 198 lines) - Jan 18, 09:24 PM
+  [dir]  security/ (? items) - Jan 18, 09:28 PM
+    [file] conftest.py (1.2KB, 46 lines) - Jan 18, 09:43 PM
+    [file] test_penetration.py (9.1KB, 233 lines) - Jan 18, 11:09 PM
+  [dir]  unit/ (? items) - Jan 16, 05:43 PM
+    [file] __init__.py (23B, 1 lines) - Jan 16, 07:05 PM
+    [file] test_auth_service.py (3.4KB, 106 lines) - Jan 16, 07:07 PM
+    [file] test_backup_script.py (5.7KB, 153 lines) - Jan 18, 01:24 AM
+    [file] test_backup_service.py (5.6KB, 154 lines) - Jan 18, 01:24 AM
+    [file] test_cache_service.py (5.7KB, 163 lines) - Jan 18, 10:01 PM
+    [file] test_dashboard_service.py (5.3KB, 139 lines) - Jan 18, 01:26 AM
+    [file] test_decorators.py (6.2KB, 186 lines) - Jan 18, 01:08 AM
+    [file] test_geolocation_service.py (4.1KB, 129 lines) - Jan 18, 01:49 AM
+    [file] test_init_data.py (3.5KB, 91 lines) - Jan 17, 02:50 AM
+    [file] test_kiosk_ai_service.py (4.8KB, 148 lines) - Jan 17, 02:13 AM
+    [file] test_kiosk_model.py (3.1KB, 120 lines) - Jan 16, 07:07 PM
+    [file] test_kiosk_service.py (4.6KB, 154 lines) - Jan 16, 07:07 PM
+    [file] test_logging_service.py (5.1KB, 142 lines) - Jan 18, 01:10 AM
+    [file] test_notification_service.py (6.0KB, 167 lines) - Jan 18, 01:21 AM
+    [file] test_security_service.py (4.5KB, 134 lines) - Jan 18, 01:08 AM
+    [file] test_user_model.py (1.6KB, 53 lines) - Jan 16, 07:07 PM
+    [file] test_websockets.py (5.0KB, 144 lines) - Jan 17, 02:13 AM

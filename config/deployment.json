@@ -1,0 +1,26 @@
+{
+    "production": {
+        "host": "admin-kiosk.example.com",
+        "user": "admin_kiosk_deploy",
+        "path": "/var/www/admin_kiosk_production",
+        "database_url": "postgresql://user:password@localhost/admin_kiosk_prod",
+        "debug": false,
+        "secret_key_length": 64
+    },
+    "staging": {
+        "host": "staging.admin-kiosk.example.com", 
+        "user": "admin_kiosk_staging",
+        "path": "/var/www/admin_kiosk_staging",
+        "database_url": "postgresql://user:password@localhost/admin_kiosk_staging",
+        "debug": true,
+        "secret_key_length": 32
+    },
+    "development": {
+        "host": "localhost",
+        "user": "local_dev",
+        "path": "./deploy/development",
+        "database_url": "sqlite:///dev_kiosk.db",
+        "debug": true,
+        "secret_key_length": 16
+    }
+} 

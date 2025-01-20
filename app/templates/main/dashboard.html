@@ -1,0 +1,236 @@
+<!-- EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+     SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt' -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Kiosks{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Resumen General -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Kiosks</h5>
+                    <h2 class="card-text" id="total-kiosks">{{ total_kiosks }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Kiosks Online</h5>
+                    <h2 class="card-text" id="online-kiosks">{{ online_kiosks }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Con Alertas</h5>
+                    <h2 class="card-text" id="alert-kiosks">{{ kiosks_with_alerts }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Con Anomalías</h5>
+                    <h2 class="card-text" id="anomaly-kiosks">{{ kiosks_with_anomalies }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos en Tiempo Real -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Uso de CPU (Promedio)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="cpu-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Uso de Memoria (Promedio)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="memory-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas y Anomalías -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Últimas Alertas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert-list" id="alert-list">
+                        {% for alert in recent_alerts %}
+                        <div class="alert alert-warning">
+                            {{ alert.message }}
+                            <small class="text-muted">{{ alert.timestamp }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Anomalías Detectadas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="anomaly-list" id="anomaly-list">
+                        {% for anomaly in recent_anomalies %}
+                        <div class="alert alert-danger">
+                            {{ anomaly.description }}
+                            <small class="text-muted">{{ anomaly.timestamp }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts para gráficos y actualizaciones en tiempo real -->
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    // Configuración de gráficos
+    const cpuChart = new Chart(
+        document.getElementById('cpu-chart').getContext('2d'),
+        {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CPU %',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        }
+    );
+
+    const memoryChart = new Chart(
+        document.getElementById('memory-chart').getContext('2d'),
+        {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Memoria %',
+                    data: [],
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        }
+    );
+
+    // Conexión WebSocket
+    const socket = io();
+
+    // Actualizar gráficos con datos en tiempo real
+    socket.on('metrics_update', function(data) {
+        // Actualizar contadores
+        document.getElementById('total-kiosks').textContent = data.total_kiosks;
+        document.getElementById('online-kiosks').textContent = data.online_kiosks;
+        document.getElementById('alert-kiosks').textContent = data.kiosks_with_alerts;
+        document.getElementById('anomaly-kiosks').textContent = data.kiosks_with_anomalies;
+
+        // Actualizar gráficos
+        const timestamp = new Date().toLocaleTimeString();
+        
+        // CPU
+        cpuChart.data.labels.push(timestamp);
+        cpuChart.data.datasets[0].data.push(data.avg_cpu);
+        if (cpuChart.data.labels.length > 20) {
+            cpuChart.data.labels.shift();
+            cpuChart.data.datasets[0].data.shift();
+        }
+        cpuChart.update();
+
+        // Memoria
+        memoryChart.data.labels.push(timestamp);
+        memoryChart.data.datasets[0].data.push(data.avg_memory);
+        if (memoryChart.data.labels.length > 20) {
+            memoryChart.data.labels.shift();
+            memoryChart.data.datasets[0].data.shift();
+        }
+        memoryChart.update();
+    });
+
+    // Manejar nuevas alertas
+    socket.on('new_alert', function(alert) {
+        const alertList = document.getElementById('alert-list');
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-warning';
+        alertDiv.innerHTML = `
+            ${alert.message}
+            <small class="text-muted">${alert.timestamp}</small>
+        `;
+        alertList.insertBefore(alertDiv, alertList.firstChild);
+        
+        // Mantener solo las últimas 10 alertas
+        if (alertList.children.length > 10) {
+            alertList.removeChild(alertList.lastChild);
+        }
+    });
+
+    // Manejar nuevas anomalías
+    socket.on('new_anomaly', function(anomaly) {
+        const anomalyList = document.getElementById('anomaly-list');
+        const anomalyDiv = document.createElement('div');
+        anomalyDiv.className = 'alert alert-danger';
+        anomalyDiv.innerHTML = `
+            ${anomaly.description}
+            <small class="text-muted">${anomaly.timestamp}</small>
+        `;
+        anomalyList.insertBefore(anomalyDiv, anomalyList.firstChild);
+        
+        // Mantener solo las últimas 10 anomalías
+        if (anomalyList.children.length > 10) {
+            anomalyList.removeChild(anomalyList.lastChild);
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %} 

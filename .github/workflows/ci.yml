@@ -1,0 +1,228 @@
+name: Admin Kiosk CI/CD
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flask-testing
+    
+    - name: Ejecutar pruebas unitarias
+      run: |
+        pytest tests/unit -v --cov=app --cov-report=xml
+    
+    - name: Ejecutar pruebas de integración
+      run: |
+        pytest tests/integration -v --cov=app --cov-report=xml
+    
+    - name: Subir cobertura de código a Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: true
+
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+    
+    - name: Instalar dependencias de seguridad
+      run: |
+        pip install bandit safety
+    
+    - name: Análisis de seguridad con Bandit
+      run: |
+        bandit -r app -f custom
+    
+    - name: Verificar dependencias con Safety
+      run: |
+        safety check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+    
+    - name: Instalar herramientas de linting
+      run: |
+        pip install flake8 black
+    
+    - name: Verificar formato con Black
+      run: |
+        black --check .
+    
+    - name: Lint con Flake8
+      run: |
+        flake8 app tests
+
+  deploy-staging:
+    needs: [test, security-check, lint, load-test, performance]
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+    
+    - name: Preparar despliegue en staging
+      env:
+        DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+        STAGING_HOST: ${{ secrets.STAGING_HOST }}
+        STAGING_USER: ${{ secrets.STAGING_USER }}
+      run: |
+        python scripts/deploy.py deploy --env staging
+
+  deploy-production:
+    needs: [test, security-check, lint, load-test, performance]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+    
+    - name: Preparar despliegue en producción
+      env:
+        DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+        PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+        PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+      run: |
+        python scripts/deploy.py deploy --env production
+
+  rollback:
+    needs: [deploy-staging, deploy-production]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+    
+    - name: Ejecutar rollback
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        HOST: ${{ secrets.DEPLOY_HOST }}
+        USER: ${{ secrets.DEPLOY_USER }}
+      run: |
+        python scripts/deploy.py rollback --env ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+  load-test:
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+    
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Ejecutar tests de carga
+      run: |
+        python scripts/run_load_tests.py --users 50 --spawn-rate 5 --time 2m
+        
+    - name: Analizar resultados
+      run: |
+        python scripts/analyze_performance.py --threshold 1000
+
+  performance:
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+    
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-benchmark
+    
+    - name: Ejecutar tests de rendimiento
+      run: |
+        pytest tests/performance --benchmark-only --benchmark-json output.json
+    
+    - name: Analizar resultados de rendimiento
+      run: |
+        python scripts/analyze_benchmarks.py --input output.json --threshold 100
+
+  notify:
+    needs: [test, security-check, lint, load-test, performance, deploy-staging, deploy-production, rollback]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notificación de estado del workflow
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }} 

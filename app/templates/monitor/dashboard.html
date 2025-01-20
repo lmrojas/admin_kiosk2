@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Monitoreo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Resumen General -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Kiosks</h5>
+                    <h2 id="total-kiosks">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Kiosks Online</h5>
+                    <h2 id="online-kiosks">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Kiosks con Anomalías</h5>
+                    <h2 id="anomalous-kiosks">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Alertas Activas</h5>
+                    <h2 id="active-alerts">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de Rendimiento -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">CPU y Memoria</h5>
+                    <canvas id="resources-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Latencia de Red</h5>
+                    <canvas id="latency-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Recientes -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Alertas Recientes</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Tipo</th>
+                                    <th>Kiosk</th>
+                                    <th>Mensaje</th>
+                                    <th>Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    // Configuración de gráficos
+    const resourcesCtx = document.getElementById('resources-chart').getContext('2d');
+    const latencyCtx = document.getElementById('latency-chart').getContext('2d');
+    
+    const resourcesChart = new Chart(resourcesCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU %',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: 'Memoria %',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    const latencyChart = new Chart(latencyCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Latencia (ms)',
+                data: [],
+                borderColor: 'rgb(153, 102, 255)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Conexión WebSocket
+    const socket = io();
+    
+    socket.on('connect', () => {
+        console.log('Conectado al servidor');
+    });
+
+    socket.on('metrics_update', (data) => {
+        // Actualizar contadores
+        document.getElementById('total-kiosks').textContent = data.total_kiosks;
+        document.getElementById('online-kiosks').textContent = data.online_kiosks;
+        document.getElementById('anomalous-kiosks').textContent = data.anomalous_kiosks;
+        
+        // Actualizar gráficos
+        const timestamp = new Date(data.timestamp).toLocaleTimeString();
+        
+        if (resourcesChart.data.labels.length > 20) {
+            resourcesChart.data.labels.shift();
+            resourcesChart.data.datasets[0].data.shift();
+            resourcesChart.data.datasets[1].data.shift();
+        }
+        
+        resourcesChart.data.labels.push(timestamp);
+        resourcesChart.data.datasets[0].data.push(data.avg_cpu_usage);
+        resourcesChart.data.datasets[1].data.push(data.avg_memory_usage);
+        resourcesChart.update();
+        
+        if (latencyChart.data.labels.length > 20) {
+            latencyChart.data.labels.shift();
+            latencyChart.data.datasets[0].data.shift();
+        }
+        
+        latencyChart.data.labels.push(timestamp);
+        latencyChart.data.datasets[0].data.push(data.avg_network_latency);
+        latencyChart.update();
+    });
+
+    socket.on('new_alert', (alert) => {
+        const alertsTable = document.getElementById('alerts-table');
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${new Date(alert.timestamp).toLocaleString()}</td>
+            <td><span class="badge ${alert.type === 'anomaly' ? 'bg-warning' : 'bg-danger'}">${alert.type}</span></td>
+            <td>${alert.kiosk_name}</td>
+            <td>${alert.message}</td>
+            <td>${JSON.stringify(alert.details || {})}</td>
+        `;
+        
+        alertsTable.insertBefore(row, alertsTable.firstChild);
+        
+        // Actualizar contador de alertas
+        const alertsCount = parseInt(document.getElementById('active-alerts').textContent);
+        document.getElementById('active-alerts').textContent = alertsCount + 1;
+    });
+
+    // Cargar datos iniciales
+    fetch('/monitor/metrics')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-kiosks').textContent = data.total_kiosks;
+            document.getElementById('online-kiosks').textContent = data.online_kiosks;
+            document.getElementById('anomalous-kiosks').textContent = data.anomalous_kiosks;
+        });
+
+    fetch('/monitor/alerts')
+        .then(response => response.json())
+        .then(alerts => {
+            document.getElementById('active-alerts').textContent = alerts.length;
+            const alertsTable = document.getElementById('alerts-table');
+            
+            alerts.forEach(alert => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(alert.timestamp).toLocaleString()}</td>
+                    <td><span class="badge ${alert.type === 'anomaly' ? 'bg-warning' : 'bg-danger'}">${alert.type}</span></td>
+                    <td>${alert.kiosk_name}</td>
+                    <td>${alert.message}</td>
+                    <td>${JSON.stringify(alert.details || {})}</td>
+                `;
+                alertsTable.appendChild(row);
+            });
+        });
+</script>
+{% endblock %} 

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Verificación de Dos Factores{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Verificación de Dos Factores
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Por favor ingresa el código de tu aplicación de autenticación
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <form class="space-y-6" action="{{ url_for('auth.login') }}" method="POST">
+                <input type="hidden" name="username" value="{{ username }}">
+                
+                <div>
+                    <label for="code_2fa" class="block text-sm font-medium text-gray-700">
+                        Código de Verificación
+                    </label>
+                    <div class="mt-1">
+                        <input id="code_2fa" name="code_2fa" type="text" required
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            placeholder="Ingresa el código de 6 dígitos">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Verificar
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">
+                            O usa una alternativa
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-2 gap-3">
+                    <div>
+                        <button onclick="requestTempCode()"
+                            class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Código por Email
+                        </button>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('auth.backup_code') }}"
+                            class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Usar Código de Respaldo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function requestTempCode() {
+    fetch("{{ url_for('auth.request_temp_code') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert('Se ha enviado un código temporal a tu email');
+        } else {
+            alert('Error al enviar el código temporal');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar el código temporal');
+    });
+}
+</script>
+{% endblock %}
+
+{% endblock %} 

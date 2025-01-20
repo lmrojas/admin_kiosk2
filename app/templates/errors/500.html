@@ -1,0 +1,18 @@
+<!-- EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+     SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt' -->
+{% extends "base.html" %}
+
+{% block title %}Error Interno del Servidor{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1 class="display-1">500</h1>
+    <p class="lead">Lo sentimos, ha ocurrido un error interno en el servidor.</p>
+    <hr class="my-4">
+    <p>El equipo técnico ha sido notificado y está trabajando en la solución.</p>
+    <div class="mt-4">
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary">Volver al Inicio</a>
+        <button onclick="window.location.reload()" class="btn btn-secondary ml-2">Intentar Nuevamente</button>
+    </div>
+</div>
+{% endblock %} 

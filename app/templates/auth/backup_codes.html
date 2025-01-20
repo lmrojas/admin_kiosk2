@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Códigos de Respaldo{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Códigos de Respaldo
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Guarda estos códigos en un lugar seguro. Cada código solo puede usarse una vez.
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div class="space-y-6">
+                <div>
+                    <div class="grid grid-cols-2 gap-4">
+                        {% for code in backup_codes %}
+                        <div class="p-2 bg-gray-50 rounded-md text-center font-mono">
+                            {{ code }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex justify-center">
+                    <button onclick="printCodes()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                        Imprimir Códigos
+                    </button>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">
+                            Instrucciones importantes
+                        </span>
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-500">
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Estos códigos te permiten acceder a tu cuenta si pierdes acceso a tu dispositivo de autenticación.</li>
+                        <li>Cada código solo puede usarse una vez y será invalidado después de su uso.</li>
+                        <li>Guarda estos códigos en un lugar seguro y separado de tu dispositivo principal.</li>
+                        <li>Puedes generar nuevos códigos en cualquier momento desde la configuración de tu cuenta.</li>
+                    </ul>
+                </div>
+
+                <div class="mt-6">
+                    <a href="{{ url_for('auth.profile') }}"
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Volver al Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function printCodes() {
+    window.print();
+}
+</script>
+
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .sm\:max-w-md, .sm\:max-w-md * {
+        visibility: visible;
+    }
+    .sm\:max-w-md {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+    button, a {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %} 

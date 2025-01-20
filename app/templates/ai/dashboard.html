@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard IA - Admin Kiosk{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ai_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1>Dashboard de Inteligencia Artificial</h1>
+        <div class="dashboard-controls">
+            <select id="modelVersion" class="form-select">
+                {% for version in model_versions %}
+                <option value="{{ version }}">Versión {{ version }}</option>
+                {% endfor %}
+            </select>
+            <div class="date-range">
+                <input type="date" id="startDate" class="form-control">
+                <input type="date" id="endDate" class="form-control">
+            </div>
+            <button id="refreshData" class="btn btn-primary">Actualizar</button>
+        </div>
+    </div>
+
+    <!-- Métricas Principales -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Precisión General</h3>
+            <div class="metric-value" id="overallAccuracy">{{ metrics.accuracy }}%</div>
+            <div class="metric-trend">
+                <span class="trend-icon"></span>
+                <span class="trend-value">{{ metrics.accuracy_trend }}%</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <h3>ROC AUC</h3>
+            <div class="metric-value" id="rocAuc">{{ metrics.roc_auc }}</div>
+            <canvas id="rocCurve"></canvas>
+        </div>
+        <div class="metric-card">
+            <h3>PR AUC</h3>
+            <div class="metric-value" id="prAuc">{{ metrics.pr_auc }}</div>
+            <canvas id="prCurve"></canvas>
+        </div>
+        <div class="metric-card">
+            <h3>Confianza Media</h3>
+            <div class="metric-value" id="meanConfidence">{{ metrics.mean_confidence }}%</div>
+            <div id="confidenceDistribution"></div>
+        </div>
+    </div>
+
+    <!-- Análisis de Drift -->
+    <div class="drift-section">
+        <h2>Análisis de Drift</h2>
+        <div class="drift-grid">
+            <div class="drift-card">
+                <h3>Distribución de Predicciones</h3>
+                <canvas id="distributionChart"></canvas>
+                <div class="drift-score">
+                    KL Divergence: <span id="klDivergence">{{ drift.kl_divergence }}</span>
+                </div>
+            </div>
+            <div class="drift-card">
+                <h3>Drift de Características</h3>
+                <div id="featureDriftHeatmap"></div>
+            </div>
+            <div class="drift-card">
+                <h3>Tendencia de Rendimiento</h3>
+                <canvas id="performanceTrendChart"></canvas>
+            </div>
+            <div class="drift-card">
+                <h3>Alertas de Drift</h3>
+                <div class="drift-alerts">
+                    {% for alert in drift.alerts %}
+                    <div class="alert alert-{{ alert.severity|lower }}">
+                        {{ alert.message }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matriz de Confusión -->
+    <div class="confusion-section">
+        <h2>Matriz de Confusión</h2>
+        <div id="confusionMatrix"></div>
+        <div class="class-metrics">
+            {% for class, metrics in class_metrics.items %}
+            <div class="class-metric-card">
+                <h4>Clase {{ class }}</h4>
+                <div class="metric-row">
+                    <span>Precisión:</span>
+                    <span>{{ metrics.precision }}%</span>
+                </div>
+                <div class="metric-row">
+                    <span>Recall:</span>
+                    <span>{{ metrics.recall }}%</span>
+                </div>
+                <div class="metric-row">
+                    <span>F1-Score:</span>
+                    <span>{{ metrics.f1_score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Calibración del Modelo -->
+    <div class="calibration-section">
+        <h2>Calibración del Modelo</h2>
+        <div class="calibration-grid">
+            <div class="calibration-chart">
+                <canvas id="calibrationCurve"></canvas>
+            </div>
+            <div class="reliability-diagram">
+                <canvas id="reliabilityDiagram"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis de Errores -->
+    <div class="errors-section">
+        <h2>Análisis de Errores</h2>
+        <div class="errors-grid">
+            <div class="error-card">
+                <h3>Distribución de Errores</h3>
+                <canvas id="errorDistribution"></canvas>
+            </div>
+            <div class="error-card">
+                <h3>Errores por Confianza</h3>
+                <canvas id="errorsByConfidence"></canvas>
+            </div>
+            <div class="error-card">
+                <h3>Casos Más Problemáticos</h3>
+                <div class="error-cases-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Predicción</th>
+                                <th>Real</th>
+                                <th>Confianza</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody id="errorCases">
+                            {% for case in error_cases %}
+                            <tr>
+                                <td>{{ case.id }}</td>
+                                <td>{{ case.predicted }}</td>
+                                <td>{{ case.actual }}</td>
+                                <td>{{ case.confidence }}%</td>
+                                <td>{{ case.error_margin }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.js' %}"></script>
+<script src="{% static 'js/plotly.js' %}"></script>
+<script src="{% static 'js/ai_dashboard.js' %}"></script>
+{% endblock %} 

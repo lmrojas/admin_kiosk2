@@ -1,0 +1,46 @@
+<!-- EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+     SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt' -->
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <h1 class="display-4 mb-4">Bienvenido a Admin Kiosk</h1>
+            
+            {% if current_user.is_authenticated %}
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">Hola, {{ current_user.username }}!</h2>
+                        <p class="card-text">Estás conectado al sistema de administración de kiosks.</p>
+                        <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-primary">
+                            <i class="fas fa-list"></i> Ver Mis Kiosks
+                        </a>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-tachometer-alt"></i> Ir al Dashboard
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body">
+                        <p class="card-text">Por favor, inicia sesión para acceder al sistema.</p>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                        </a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">
+                            <i class="fas fa-user-plus"></i> Registrarse
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %} 

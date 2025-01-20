@@ -1,0 +1,239 @@
+/* Dashboard de IA - Admin Kiosk */
+
+.dashboard-container {
+    padding: 2rem;
+    background-color: #f8f9fa;
+}
+
+/* Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dashboard-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.date-range {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Métricas Principales */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 1rem 0;
+}
+
+.metric-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.trend-icon {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+}
+
+.trend-up {
+    border-bottom: 8px solid #28a745;
+}
+
+.trend-down {
+    border-top: 8px solid #dc3545;
+}
+
+/* Análisis de Drift */
+.drift-section {
+    margin-bottom: 2rem;
+}
+
+.drift-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.drift-card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.drift-score {
+    margin-top: 1rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.drift-alerts {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Matriz de Confusión */
+.confusion-section {
+    margin-bottom: 2rem;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.class-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.class-metric-card {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0;
+}
+
+/* Calibración */
+.calibration-section {
+    margin-bottom: 2rem;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.calibration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Análisis de Errores */
+.errors-section {
+    margin-bottom: 2rem;
+}
+
+.errors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.error-card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-cases-table {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Gráficos */
+canvas {
+    width: 100% !important;
+    height: 200px !important;
+    margin-top: 1rem;
+}
+
+#confusionMatrix {
+    height: 300px !important;
+}
+
+#featureDriftHeatmap {
+    height: 300px !important;
+}
+
+/* Alertas */
+.alert {
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+}
+
+.alert-critical {
+    background-color: #dc3545;
+    color: white;
+}
+
+.alert-high {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.alert-medium {
+    background-color: #ffc107;
+    color: #343a40;
+}
+
+.alert-low {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .dashboard-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .date-range {
+        width: 100%;
+    }
+    
+    .date-range input {
+        flex: 1;
+    }
+    
+    #refreshData {
+        width: 100%;
+    }
+    
+    .metric-card {
+        text-align: center;
+    }
+} 

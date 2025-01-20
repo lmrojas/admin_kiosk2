@@ -1,0 +1,105 @@
+2025-01-19 00:38:33,805 ERROR: Exception on / [GET] [in D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py:1414]
+Traceback (most recent call last):
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\app\blueprints\main.py", line 15, in index
+    return render_template('main/index.html')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\templating.py", line 128, in _render
+    app.update_template_context(context)
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 737, in update_template_context
+    context.update(func())
+                   ^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\utils.py", line 407, in _user_context_processor
+    return dict(current_user=_get_user())
+                             ^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\utils.py", line 372, in _get_user
+    current_app.login_manager._load_user()
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\login_manager.py", line 347, in _load_user
+    raise Exception(
+Exception: Missing user_loader or request_loader. Refer to http://flask-login.readthedocs.io/#how-it-works for more info.
+2025-01-19 00:38:33,811 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in D:\Programas_D\admin_kiosk_2\app\__init__.py:72]
+2025-01-19 00:38:34,990 INFO: Audit log: {'timestamp': '2025-01-19T03:38:34.990092', 'user_id': None, 'action': 'request', 'resource': 'main.index', 'details': {'method': 'GET', 'path': '/', 'ip': '127.0.0.1'}} [in D:\Programas_D\admin_kiosk_2\app\services\security_service.py:138]
+2025-01-19 00:38:34,991 ERROR: Exception on / [GET] [in D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py:1414]
+Traceback (most recent call last):
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\app\blueprints\main.py", line 15, in index
+    return render_template('main/index.html')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\templating.py", line 128, in _render
+    app.update_template_context(context)
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 737, in update_template_context
+    context.update(func())
+                   ^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\utils.py", line 407, in _user_context_processor
+    return dict(current_user=_get_user())
+                             ^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\utils.py", line 372, in _get_user
+    current_app.login_manager._load_user()
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\login_manager.py", line 347, in _load_user
+    raise Exception(
+Exception: Missing user_loader or request_loader. Refer to http://flask-login.readthedocs.io/#how-it-works for more info.
+2025-01-19 00:38:34,993 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in D:\Programas_D\admin_kiosk_2\app\__init__.py:72]
+2025-01-19 00:41:43,837 INFO: Audit log: {'timestamp': '2025-01-19T03:41:43.837902', 'user_id': None, 'action': 'request', 'resource': 'main.index', 'details': {'method': 'GET', 'path': '/', 'ip': '127.0.0.1'}} [in D:\Programas_D\admin_kiosk_2\app\services\security_service.py:138]
+2025-01-19 00:41:43,837 ERROR: Exception on / [GET] [in D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py:1414]
+Traceback (most recent call last):
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\app\blueprints\main.py", line 15, in index
+    return render_template('main/index.html')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\templating.py", line 128, in _render
+    app.update_template_context(context)
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask\app.py", line 737, in update_template_context
+    context.update(func())
+                   ^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\utils.py", line 407, in _user_context_processor
+    return dict(current_user=_get_user())
+                             ^^^^^^^^^^^
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\utils.py", line 372, in _get_user
+    current_app.login_manager._load_user()
+  File "D:\Programas_D\admin_kiosk_2\venv\Lib\site-packages\flask_login\login_manager.py", line 347, in _load_user
+    raise Exception(
+Exception: Missing user_loader or request_loader. Refer to http://flask-login.readthedocs.io/#how-it-works for more info.
+2025-01-19 00:41:43,837 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in D:\Programas_D\admin_kiosk_2\app\__init__.py:72]
+2025-01-19 00:44:52,009 INFO: Audit log: {'timestamp': '2025-01-19T03:44:52.009067', 'user_id': None, 'action': 'request', 'resource': 'main.index', 'details': {'method': 'GET', 'path': '/', 'ip': '127.0.0.1'}} [in D:\Programas_D\admin_kiosk_2\app\services\security_service.py:138]

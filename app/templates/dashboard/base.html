@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Monitoreo - Admin Kiosk</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/alpine.min.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+</head>
+<body class="bg-gray-100">
+    <div x-data="{ sidebarOpen: false }" class="flex h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <aside class="z-20 hidden w-64 overflow-y-auto bg-white md:block flex-shrink-0">
+            <div class="py-4 text-gray-500">
+                <a href="{{ url_for('dashboard.index') }}" class="ml-6 text-lg font-bold text-gray-800">
+                    Admin Kiosk
+                </a>
+                <ul class="mt-6">
+                    <li class="relative px-6 py-3">
+                        <a href="{{ url_for('dashboard.index') }}" 
+                           class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800">
+                            <span class="ml-4">Vista General</span>
+                        </a>
+                    </li>
+                    <li class="relative px-6 py-3">
+                        <a href="{{ url_for('dashboard.logs') }}"
+                           class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800">
+                            <span class="ml-4">Logs</span>
+                        </a>
+                    </li>
+                    <li class="relative px-6 py-3">
+                        <a href="{{ url_for('dashboard.security') }}"
+                           class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800">
+                            <span class="ml-4">Seguridad</span>
+                        </a>
+                    </li>
+                    <li class="relative px-6 py-3">
+                        <a href="{{ url_for('dashboard.backups') }}"
+                           class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800">
+                            <span class="ml-4">Backups</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+        
+        <!-- Mobile sidebar -->
+        <div x-show="sidebarOpen" 
+             x-transition:enter="transition ease-in-out duration-150"
+             x-transition:enter-start="opacity-0" 
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in-out duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-10 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        </div>
+        
+        <div class="flex flex-col flex-1 w-full">
+            <!-- Header -->
+            <header class="z-10 py-4 bg-white shadow-md">
+                <div class="container flex items-center justify-between h-full px-6 mx-auto text-purple-600">
+                    <!-- Mobile hamburger -->
+                    <button class="p-1 mr-5 -ml-1 rounded-md md:hidden focus:outline-none focus:shadow-outline-purple"
+                            @click="sidebarOpen = !sidebarOpen"
+                            aria-label="Menu">
+                        <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                  d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                                  clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- User menu -->
+                    <ul class="flex items-center flex-shrink-0 space-x-6">
+                        <li class="relative">
+                            <button class="align-middle rounded-full focus:shadow-outline-purple focus:outline-none"
+                                    @click="isProfileMenuOpen = !isProfileMenuOpen"
+                                    aria-label="Account"
+                                    aria-haspopup="true">
+                                <img class="object-cover w-8 h-8 rounded-full"
+                                     src="{{ url_for('static', filename='img/user.png') }}"
+                                     alt="User photo"
+                                     aria-hidden="true" />
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </header>
+            
+            <!-- Main content -->
+            <main class="h-full overflow-y-auto">
+                <div class="container px-6 mx-auto grid">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Scripts específicos de la página -->
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

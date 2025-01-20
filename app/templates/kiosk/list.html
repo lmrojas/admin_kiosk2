@@ -1,0 +1,173 @@
+<!-- EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+     SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt' -->
+{% extends "base.html" %}
+
+{% block title %}Lista de Kiosks{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="health_min" class="form-label">Salud Mínima</label>
+                    <input type="number" class="form-control" id="health_min" name="health_min" 
+                           value="{{ health_min }}" min="0" max="100">
+                </div>
+                <div class="col-md-4">
+                    <label for="health_max" class="form-label">Salud Máxima</label>
+                    <input type="number" class="form-control" id="health_max" name="health_max" 
+                           value="{{ health_max }}" min="0" max="100">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Kiosks con Anomalías -->
+    {% if anomalous_kiosks %}
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">⚠️ Kiosks con Anomalías Recientes</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                            <th>Salud</th>
+                            <th>Prob. Anomalía</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kiosk in anomalous_kiosks %}
+                        <tr>
+                            <td>{{ kiosk.name }}</td>
+                            <td>{{ kiosk.location or 'N/A' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if kiosk.status == 'active' else 'danger' }}">
+                                    {{ kiosk.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar bg-{{ 'success' if kiosk.health_score > 70 else 'warning' if kiosk.health_score > 30 else 'danger' }}" 
+                                         role="progressbar" 
+                                         style="width: {{ kiosk.health_score }}%">
+                                        {{ "%.1f"|format(kiosk.health_score) }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ "%.2f"|format(kiosk.anomaly_probability * 100) }}%</td>
+                            <td>
+                                <a href="{{ url_for('kiosk.details', kiosk_id=kiosk.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    Detalles
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista Principal de Kiosks -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Kiosks</h5>
+            <a href="{{ url_for('kiosk.create_kiosk') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Nuevo Kiosk
+            </a>
+        </div>
+        <div class="card-body">
+            {% if kiosks %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                            <th>Salud</th>
+                            <th>Última Conexión</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kiosk in kiosks %}
+                        <tr>
+                            <td>{{ kiosk.name }}</td>
+                            <td>{{ kiosk.location or 'N/A' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if kiosk.status == 'active' else 'danger' }}">
+                                    {{ kiosk.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar bg-{{ 'success' if kiosk.health_score > 70 else 'warning' if kiosk.health_score > 30 else 'danger' }}" 
+                                         role="progressbar" 
+                                         style="width: {{ kiosk.health_score }}%">
+                                        {{ "%.1f"|format(kiosk.health_score) }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if kiosk.last_online %}
+                                    {{ kiosk.last_online.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                    Nunca
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('kiosk.details', kiosk_id=kiosk.id) }}" 
+                                       class="btn btn-sm btn-info">
+                                        Detalles
+                                    </a>
+                                    <a href="{{ url_for('kiosk.update_kiosk', kiosk_id=kiosk.id) }}" 
+                                       class="btn btn-sm btn-warning">
+                                        Editar
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No hay kiosks que coincidan con los filtros seleccionados.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Actualización en tiempo real (cada 30 segundos)
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %} 

@@ -1,0 +1,390 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<h2 class="my-6 text-2xl font-semibold text-gray-700">
+    Monitoreo de Seguridad
+</h2>
+
+<!-- Métricas Principales -->
+<div class="grid gap-6 mb-8 md:grid-cols-4">
+    <!-- Intentos de Login Fallidos -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-red-500 bg-red-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Intentos Fallidos (24h)
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.failed_logins">
+                0
+            </p>
+        </div>
+    </div>
+    
+    <!-- Actividad Sospechosa -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Actividad Sospechosa
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.suspicious_activity">
+                0
+            </p>
+        </div>
+    </div>
+    
+    <!-- Sesiones Activas -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-blue-500 bg-blue-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Sesiones Activas
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.active_sessions">
+                0
+            </p>
+        </div>
+    </div>
+    
+    <!-- Permisos Denegados -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-purple-500 bg-purple-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Permisos Denegados
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.denied_permissions">
+                0
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos de Seguridad -->
+<div class="grid gap-6 mb-8 md:grid-cols-2">
+    <!-- Intentos de Login por IP -->
+    <div class="min-w-0 p-4 bg-white rounded-lg shadow-xs">
+        <h4 class="mb-4 font-semibold text-gray-800">
+            Intentos de Login por IP
+        </h4>
+        <canvas id="loginAttemptsChart"></canvas>
+    </div>
+    
+    <!-- Actividad por Hora -->
+    <div class="min-w-0 p-4 bg-white rounded-lg shadow-xs">
+        <h4 class="mb-4 font-semibold text-gray-800">
+            Actividad por Hora
+        </h4>
+        <canvas id="activityByHourChart"></canvas>
+    </div>
+</div>
+
+<!-- Eventos de Seguridad -->
+<div class="w-full overflow-hidden rounded-lg shadow-xs" x-data="securityData()">
+    <div class="w-full overflow-x-auto">
+        <table class="w-full whitespace-no-wrap">
+            <thead>
+                <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
+                    <th class="px-4 py-3">Timestamp</th>
+                    <th class="px-4 py-3">Tipo</th>
+                    <th class="px-4 py-3">Usuario</th>
+                    <th class="px-4 py-3">IP</th>
+                    <th class="px-4 py-3">Detalles</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y">
+                <template x-for="event in events" :key="event.id">
+                    <tr class="text-gray-700">
+                        <td class="px-4 py-3 text-sm" x-text="formatDate(event.timestamp)"></td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 font-semibold leading-tight rounded-full"
+                                  :class="{
+                                      'text-red-700 bg-red-100': event.type === 'failed_login',
+                                      'text-orange-700 bg-orange-100': event.type === 'suspicious',
+                                      'text-purple-700 bg-purple-100': event.type === 'permission_denied',
+                                      'text-blue-700 bg-blue-100': event.type === 'session'
+                                  }"
+                                  x-text="formatEventType(event.type)">
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm" x-text="event.username"></td>
+                        <td class="px-4 py-3 text-sm" x-text="event.ip_address"></td>
+                        <td class="px-4 py-3 text-sm">
+                            <button @click="showDetails(event)"
+                                    class="px-3 py-1 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-md active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                                Detalles
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paginación -->
+    <div class="grid px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t bg-gray-50 sm:grid-cols-9">
+        <span class="flex items-center col-span-3">
+            Mostrando {{ pagination.start }}-{{ pagination.end }} de {{ pagination.total }}
+        </span>
+        <span class="col-span-2"></span>
+        <span class="flex col-span-4 mt-2 sm:mt-auto sm:justify-end">
+            <nav aria-label="Table navigation">
+                <ul class="inline-flex items-center">
+                    <li>
+                        <button @click="prevPage()"
+                                :disabled="pagination.current === 1"
+                                class="px-3 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple"
+                                :class="{ 'opacity-50 cursor-not-allowed': pagination.current === 1 }">
+                            Anterior
+                        </button>
+                    </li>
+                    <li>
+                        <button @click="nextPage()"
+                                :disabled="pagination.current === pagination.total_pages"
+                                class="px-3 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple"
+                                :class="{ 'opacity-50 cursor-not-allowed': pagination.current === pagination.total_pages }">
+                            Siguiente
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </span>
+    </div>
+</div>
+
+<!-- Modal de Detalles -->
+<div x-show="showModal" 
+     class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center"
+     x-transition:enter="transition ease-out duration-150"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+    <div x-show="showModal"
+         class="w-full px-6 py-4 overflow-hidden bg-white rounded-t-lg sm:rounded-lg sm:m-4 sm:max-w-xl"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 transform translate-y-1/2"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0 transform translate-y-1/2">
+        <header class="flex justify-between">
+            <h3 class="text-xl font-semibold text-gray-700">
+                Detalles del Evento
+            </h3>
+            <button @click="showModal = false"
+                    class="inline-flex items-center justify-center w-6 h-6 text-gray-400 transition-colors duration-150 rounded hover:text-gray-700">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"></path>
+                </svg>
+            </button>
+        </header>
+        <div class="mt-4">
+            <div class="mb-4">
+                <label class="block text-sm">
+                    <span class="font-semibold text-gray-700">Timestamp:</span>
+                    <span x-text="formatDate(selectedEvent.timestamp)"></span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm">
+                    <span class="font-semibold text-gray-700">Tipo:</span>
+                    <span x-text="formatEventType(selectedEvent.type)"></span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm">
+                    <span class="font-semibold text-gray-700">Usuario:</span>
+                    <span x-text="selectedEvent.username"></span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm">
+                    <span class="font-semibold text-gray-700">IP:</span>
+                    <span x-text="selectedEvent.ip_address"></span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm">
+                    <span class="font-semibold text-gray-700">User Agent:</span>
+                    <span x-text="selectedEvent.user_agent"></span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm">
+                    <span class="font-semibold text-gray-700">Detalles:</span>
+                    <pre class="mt-1 p-2 bg-gray-100 rounded"><code x-text="JSON.stringify(selectedEvent.details, null, 2)"></code></pre>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function securityData() {
+    return {
+        events: [],
+        selectedEvent: {},
+        showModal: false,
+        metrics: {
+            failed_logins: 0,
+            suspicious_activity: 0,
+            active_sessions: 0,
+            denied_permissions: 0
+        },
+        pagination: {
+            current: 1,
+            total: 0,
+            per_page: 10,
+            total_pages: 0,
+            start: 0,
+            end: 0
+        },
+        
+        async init() {
+            await this.loadMetrics();
+            await this.loadEvents();
+            await this.loadCharts();
+        },
+        
+        async loadMetrics() {
+            try {
+                const response = await fetch('/api/dashboard/security/metrics');
+                this.metrics = await response.json();
+            } catch (error) {
+                console.error('Error cargando métricas:', error);
+            }
+        },
+        
+        async loadEvents() {
+            try {
+                const params = new URLSearchParams({
+                    page: this.pagination.current,
+                    per_page: this.pagination.per_page
+                });
+                
+                const response = await fetch(`/api/dashboard/security/events?${params}`);
+                const data = await response.json();
+                
+                this.events = data.events;
+                this.pagination = {
+                    ...this.pagination,
+                    total: data.total,
+                    total_pages: Math.ceil(data.total / this.pagination.per_page),
+                    start: (this.pagination.current - 1) * this.pagination.per_page + 1,
+                    end: Math.min(this.pagination.current * this.pagination.per_page, data.total)
+                };
+            } catch (error) {
+                console.error('Error cargando eventos:', error);
+            }
+        },
+        
+        async loadCharts() {
+            const data = await this.getChartData();
+            
+            // Gráfico de intentos de login
+            const loginCtx = document.getElementById('loginAttemptsChart').getContext('2d');
+            new Chart(loginCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.login_attempts.map(d => d.ip),
+                    datasets: [{
+                        label: 'Intentos Fallidos',
+                        data: data.login_attempts.map(d => d.count),
+                        backgroundColor: 'rgb(245, 101, 101)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Gráfico de actividad por hora
+            const activityCtx = document.getElementById('activityByHourChart').getContext('2d');
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: data.activity_by_hour.map(d => d.hour),
+                    datasets: [{
+                        label: 'Eventos',
+                        data: data.activity_by_hour.map(d => d.count),
+                        borderColor: 'rgb(66, 153, 225)',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        },
+        
+        async getChartData() {
+            try {
+                const response = await fetch('/api/dashboard/security/stats');
+                return await response.json();
+            } catch (error) {
+                console.error('Error obteniendo datos para gráficos:', error);
+                return {
+                    login_attempts: [],
+                    activity_by_hour: []
+                };
+            }
+        },
+        
+        showDetails(event) {
+            this.selectedEvent = event;
+            this.showModal = true;
+        },
+        
+        async prevPage() {
+            if (this.pagination.current > 1) {
+                this.pagination.current--;
+                await this.loadEvents();
+            }
+        },
+        
+        async nextPage() {
+            if (this.pagination.current < this.pagination.total_pages) {
+                this.pagination.current++;
+                await this.loadEvents();
+            }
+        },
+        
+        formatDate(timestamp) {
+            return new Date(timestamp).toLocaleString('es-ES');
+        },
+        
+        formatEventType(type) {
+            const types = {
+                'failed_login': 'Login Fallido',
+                'suspicious': 'Actividad Sospechosa',
+                'permission_denied': 'Permiso Denegado',
+                'session': 'Sesión'
+            };
+            return types[type] || type;
+        }
+    };
+}
+</script>
+{% endblock %} 

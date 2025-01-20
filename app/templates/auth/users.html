@@ -1,0 +1,132 @@
+# EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+# SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
+
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Gestión de Usuarios</h1>
+
+    <!-- Tabla de usuarios -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Usuarios del Sistema</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Último Acceso</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if current_user.is_admin() %}
+                                <form action="{{ url_for('auth.update_user_role', user_id=user.id) }}" method="POST" class="d-inline">
+                                    <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        {% for role in roles %}
+                                        <option value="{{ role.name }}" {% if user.role_name == role.name %}selected{% endif %}>
+                                            {{ role.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ user.role_name }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                Nunca
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if current_user.is_admin() and user != current_user %}
+                                <form action="{{ url_for('auth.toggle_user_status', user_id=user.id) }}" method="POST" class="d-inline">
+                                    {% if user.is_active %}
+                                    <button type="submit" class="btn btn-danger btn-sm" 
+                                            onclick="return confirm('¿Estás seguro de desactivar este usuario?')">
+                                        Desactivar
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        Activar
+                                    </button>
+                                    {% endif %}
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de Roles -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Roles y Permisos</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for role in roles %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">{{ role.name }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ role.description }}</p>
+                            <h6>Permisos:</h6>
+                            <ul class="list-unstyled">
+                                {% for permission in role.permissions %}
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    {{ permission.name.replace('_', ' ').title() }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
+{% endblock %} 

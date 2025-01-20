@@ -1,0 +1,202 @@
+<!-- EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+     SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt' -->
+{% extends "base.html" %}
+
+{% block title %}Actualizar Kiosk - {{ kiosk.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Actualizar Kiosk</h5>
+                    <span class="badge bg-{{ 'success' if kiosk.status == 'active' else 'danger' }}">
+                        {{ kiosk.status }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Campo oculto para CSRF -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- Estado del Kiosk -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Estado</h6>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Estado del Kiosk</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {% if kiosk.status == 'active' %}selected{% endif %}>
+                                        Activo
+                                    </option>
+                                    <option value="inactive" {% if kiosk.status == 'inactive' %}selected{% endif %}>
+                                        Inactivo
+                                    </option>
+                                    <option value="maintenance" {% if kiosk.status == 'maintenance' %}selected{% endif %}>
+                                        En Mantenimiento
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Información Básica -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Información Básica</h6>
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nombre del Kiosk *</label>
+                                <input type="text" class="form-control" id="name" name="name" required
+                                       value="{{ kiosk.name }}" placeholder="Ingrese un nombre descriptivo">
+                                <div class="form-text">El nombre debe ser único y descriptivo.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Ubicación</label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       value="{{ kiosk.location }}" placeholder="Ej: Piso 1, Sala A">
+                            </div>
+                        </div>
+
+                        <!-- Información de Hardware -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Información de Hardware</h6>
+                            <div class="mb-3">
+                                <label for="cpu_model" class="form-label">Modelo de CPU</label>
+                                <input type="text" class="form-control" id="cpu_model" name="cpu_model"
+                                       value="{{ kiosk.cpu_model }}" placeholder="Ej: Intel Core i5-9400">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ram_total" class="form-label">RAM Total (GB)</label>
+                                        <input type="number" class="form-control" id="ram_total" name="ram_total"
+                                               value="{{ kiosk.ram_total }}" step="0.1" min="0" placeholder="Ej: 8.0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="storage_total" class="form-label">Almacenamiento Total (GB)</label>
+                                        <input type="number" class="form-control" id="storage_total" name="storage_total"
+                                               value="{{ kiosk.storage_total }}" step="0.1" min="0" placeholder="Ej: 500.0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información de Red -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Información de Red</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ip_address" class="form-label">Dirección IP</label>
+                                        <input type="text" class="form-control" id="ip_address" name="ip_address"
+                                               value="{{ kiosk.ip_address }}"
+                                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+                                               placeholder="Ej: 192.168.1.100">
+                                        <div class="form-text">Formato IPv4: xxx.xxx.xxx.xxx</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mac_address" class="form-label">Dirección MAC</label>
+                                        <input type="text" class="form-control" id="mac_address" name="mac_address"
+                                               value="{{ kiosk.mac_address }}"
+                                               pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
+                                               placeholder="Ej: 00:1A:2B:3C:4D:5E">
+                                        <div class="form-text">Formato: XX:XX:XX:XX:XX:XX</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Métricas de Salud (Solo Lectura) -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Métricas de Salud</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Score de Salud</label>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-{{ 'success' if kiosk.health_score > 70 else 'warning' if kiosk.health_score > 30 else 'danger' }}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ kiosk.health_score }}%">
+                                                {{ "%.1f"|format(kiosk.health_score) }}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Probabilidad de Anomalía</label>
+                                        <input type="text" class="form-control" readonly
+                                               value="{{ '%.2f'|format(kiosk.anomaly_probability * 100) }}%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                Guardar Cambios
+                            </button>
+                            <div>
+                                <a href="{{ url_for('kiosk.details', kiosk_id=kiosk.id) }}" class="btn btn-info">
+                                    Ver Detalles
+                                </a>
+                                <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-secondary">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Validación de formulario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
+            e.preventDefault();
+            alert('El nombre del kiosk es obligatorio');
+            return;
+        }
+    });
+
+    // Formateo automático de MAC address
+    document.getElementById('mac_address').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+        if (value.length > 12) value = value.slice(0, 12);
+        if (value.length > 0) {
+            value = value.match(/.{1,2}/g).join(':');
+        }
+        e.target.value = value.toUpperCase();
+    });
+
+    // Validación de IP address
+    document.getElementById('ip_address').addEventListener('input', function(e) {
+        let value = e.target.value;
+        if (value) {
+            const parts = value.split('.');
+            if (parts.length === 4) {
+                const valid = parts.every(part => {
+                    const num = parseInt(part);
+                    return num >= 0 && num <= 255;
+                });
+                e.target.setCustomValidity(valid ? '' : 'IP inválida');
+            } else {
+                e.target.setCustomValidity('Formato: xxx.xxx.xxx.xxx');
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %} 

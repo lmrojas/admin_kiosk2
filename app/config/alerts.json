@@ -1,0 +1,50 @@
+{
+    "alerts": [
+        {
+            "name": "failed_login_attempts",
+            "log_type": "security",
+            "conditions": {
+                "event_type": "login_attempt",
+                "details.success": false
+            },
+            "threshold": 5,
+            "time_window_minutes": 15,
+            "severity": "high",
+            "notification_channels": ["email", "slack"]
+        },
+        {
+            "name": "critical_errors",
+            "log_type": "error",
+            "conditions": {
+                "error_type": ["DatabaseError", "ConnectionError"]
+            },
+            "threshold": 1,
+            "time_window_minutes": 5,
+            "severity": "critical",
+            "notification_channels": ["email", "slack", "sms"]
+        },
+        {
+            "name": "suspicious_activity",
+            "log_type": "security",
+            "conditions": {
+                "event_type": ["unauthorized_access", "permission_violation"]
+            },
+            "threshold": 3,
+            "time_window_minutes": 30,
+            "severity": "high",
+            "notification_channels": ["email", "slack"]
+        },
+        {
+            "name": "resource_modification",
+            "log_type": "audit",
+            "conditions": {
+                "action": ["delete", "update"],
+                "resource": ["kiosk", "user"]
+            },
+            "threshold": 10,
+            "time_window_minutes": 60,
+            "severity": "medium",
+            "notification_channels": ["email"]
+        }
+    ]
+} 

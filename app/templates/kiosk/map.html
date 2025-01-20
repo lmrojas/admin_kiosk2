@@ -1,0 +1,195 @@
+<!-- EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
+     SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt' -->
+{% extends "base.html" %}
+
+{% block title %}Mapa de Kiosks{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+    #map { 
+        height: calc(100vh - 100px);
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .kiosk-info {
+        padding: 10px;
+        background: white;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .kiosk-info h5 {
+        margin: 0 0 10px 0;
+        color: #333;
+    }
+    .kiosk-info .status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    .status-active {
+        background: #28a745;
+        color: white;
+    }
+    .status-inactive {
+        background: #dc3545;
+        color: white;
+    }
+    .filter-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Mapa de Kiosks</h5>
+                    <div>
+                        <button class="btn btn-sm btn-primary" onclick="findMyLocation()">
+                            <i class="fas fa-location-arrow"></i> Mi Ubicación
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="fitAllMarkers()">
+                            <i class="fas fa-expand-arrows-alt"></i> Ver Todos
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body position-relative">
+                    <div class="filter-controls">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showActive" checked>
+                            <label class="form-check-label" for="showActive">
+                                Activos
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showInactive" checked>
+                            <label class="form-check-label" for="showInactive">
+                                Inactivos
+                            </label>
+                        </div>
+                    </div>
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    let map;
+    let markers = [];
+    let markerLayer = L.layerGroup();
+
+    // Inicializar mapa
+    function initMap() {
+        map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        markerLayer.addTo(map);
+        loadKiosks();
+    }
+
+    // Cargar kiosks
+    function loadKiosks() {
+        fetch('/kiosk/api/all')
+            .then(response => response.json())
+            .then(data => {
+                markers = data.map(kiosk => {
+                    const marker = L.marker([kiosk.latitude, kiosk.longitude]);
+                    const popupContent = `
+                        <div class="kiosk-info">
+                            <h5>${kiosk.name}</h5>
+                            <p>
+                                <strong>ID:</strong> ${kiosk.id}<br>
+                                <strong>Estado:</strong> 
+                                <span class="status status-${kiosk.status}">
+                                    ${kiosk.status}
+                                </span>
+                            </p>
+                            <a href="/kiosk/${kiosk.id}" class="btn btn-sm btn-primary">
+                                Ver Detalles
+                            </a>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    marker.status = kiosk.status;
+                    return marker;
+                });
+                updateMarkers();
+                fitAllMarkers();
+            })
+            .catch(error => {
+                console.error('Error cargando kiosks:', error);
+                alert('Error al cargar los kiosks');
+            });
+    }
+
+    // Actualizar marcadores según filtros
+    function updateMarkers() {
+        markerLayer.clearLayers();
+        const showActive = document.getElementById('showActive').checked;
+        const showInactive = document.getElementById('showInactive').checked;
+
+        markers.forEach(marker => {
+            if ((marker.status === 'active' && showActive) ||
+                (marker.status === 'inactive' && showInactive)) {
+                markerLayer.addLayer(marker);
+            }
+        });
+    }
+
+    // Ajustar vista para mostrar todos los marcadores
+    function fitAllMarkers() {
+        const group = L.featureGroup(markers);
+        if (group.getLayers().length > 0) {
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    }
+
+    // Encontrar ubicación del usuario
+    function findMyLocation() {
+        if (!navigator.geolocation) {
+            alert('Geolocalización no soportada por su navegador');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                map.setView(
+                    [position.coords.latitude, position.coords.longitude],
+                    13
+                );
+            },
+            error => {
+                console.error('Error obteniendo ubicación:', error);
+                alert('Error al obtener su ubicación');
+            }
+        );
+    }
+
+    // Event listeners
+    document.getElementById('showActive').addEventListener('change', updateMarkers);
+    document.getElementById('showInactive').addEventListener('change', updateMarkers);
+
+    // Inicializar mapa cuando se carga la página
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %} 

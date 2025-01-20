@@ -1,0 +1,213 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<h2 class="my-6 text-2xl font-semibold text-gray-700">
+    Vista General del Sistema
+</h2>
+
+<!-- Estado del Sistema -->
+<div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
+    <!-- Logs Totales -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Logs Totales
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.logs.total">
+                0
+            </p>
+        </div>
+    </div>
+    
+    <!-- Errores -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-red-500 bg-red-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Errores
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.logs.errors">
+                0
+            </p>
+        </div>
+    </div>
+    
+    <!-- Intentos Fallidos -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-blue-500 bg-blue-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Intentos Fallidos
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="metrics.security.failed_logins">
+                0
+            </p>
+        </div>
+    </div>
+    
+    <!-- Estado Backups -->
+    <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mr-4 text-green-500 bg-green-100 rounded-full">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 00-2 0v1.586l-.293-.293a1 1 0 10-1.414 1.414l2 2a1 1 0 001.414 0l2-2a1 1 0 00-1.414-1.414l-.293.293V9z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <div>
+            <p class="mb-2 text-sm font-medium text-gray-600">
+                Total Backups
+            </p>
+            <p class="text-lg font-semibold text-gray-700" x-text="backups.total_backups">
+                0
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="grid gap-6 mb-8 md:grid-cols-2">
+    <!-- Gráfico de Logs -->
+    <div class="min-w-0 p-4 bg-white rounded-lg shadow-xs">
+        <h4 class="mb-4 font-semibold text-gray-800">
+            Logs por Día
+        </h4>
+        <canvas id="logsChart"></canvas>
+    </div>
+    
+    <!-- Gráfico de Rendimiento -->
+    <div class="min-w-0 p-4 bg-white rounded-lg shadow-xs">
+        <h4 class="mb-4 font-semibold text-gray-800">
+            Rendimiento del Sistema
+        </h4>
+        <canvas id="performanceChart"></canvas>
+    </div>
+</div>
+
+<!-- Alertas Recientes -->
+<div class="w-full mb-8 overflow-hidden rounded-lg shadow-xs">
+    <div class="w-full overflow-x-auto">
+        <table class="w-full whitespace-no-wrap">
+            <thead>
+                <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
+                    <th class="px-4 py-3">Severidad</th>
+                    <th class="px-4 py-3">Mensaje</th>
+                    <th class="px-4 py-3">Fecha</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y" x-data="{ alerts: [] }" x-init="alerts = await getAlerts()">
+                <template x-for="alert in alerts" :key="alert.id">
+                    <tr class="text-gray-700">
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 font-semibold leading-tight rounded-full" 
+                                  :class="{
+                                      'text-green-700 bg-green-100': alert.severity === 'info',
+                                      'text-orange-700 bg-orange-100': alert.severity === 'warning',
+                                      'text-red-700 bg-red-100': alert.severity === 'high'
+                                  }"
+                                  x-text="alert.severity">
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm" x-text="alert.message"></td>
+                        <td class="px-4 py-3 text-sm" x-text="formatDate(alert.timestamp)"></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Función para obtener datos del dashboard
+async function getDashboardData() {
+    try {
+        const response = await fetch('/api/dashboard/status');
+        return await response.json();
+    } catch (error) {
+        console.error('Error obteniendo datos:', error);
+        return {
+            metrics: { logs: {}, security: {} },
+            alerts: [],
+            backups: {}
+        };
+    }
+}
+
+// Función para obtener alertas
+async function getAlerts() {
+    try {
+        const response = await fetch('/api/dashboard/alerts');
+        return await response.json();
+    } catch (error) {
+        console.error('Error obteniendo alertas:', error);
+        return [];
+    }
+}
+
+// Función para formatear fechas
+function formatDate(timestamp) {
+    return new Date(timestamp).toLocaleString('es-ES');
+}
+
+// Inicialización de gráficos
+document.addEventListener('DOMContentLoaded', async () => {
+    const data = await getDashboardData();
+    
+    // Gráfico de Logs
+    const logsCtx = document.getElementById('logsChart').getContext('2d');
+    new Chart(logsCtx, {
+        type: 'line',
+        data: {
+            labels: data.log_summary.map(d => d.date),
+            datasets: [{
+                label: 'Total Logs',
+                data: data.log_summary.map(d => d.total),
+                borderColor: 'rgb(66, 153, 225)',
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    
+    // Gráfico de Rendimiento
+    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(perfCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['CPU', 'Memoria'],
+            datasets: [{
+                data: [
+                    data.metrics.performance.cpu,
+                    data.metrics.performance.memory
+                ],
+                backgroundColor: [
+                    'rgb(66, 153, 225)',
+                    'rgb(72, 187, 120)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+{% endblock %} 
