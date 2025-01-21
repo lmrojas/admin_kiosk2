@@ -31,12 +31,14 @@ import sys
 import logging
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import pandas as pd
 import numpy as np
 from datetime import datetime
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # Agregar directorio raíz al path
 root_dir = str(Path(__file__).resolve().parent.parent)
@@ -119,7 +121,7 @@ class ModelTrainer:
         # Crear modelo
         model = SimpleAnomalyDetector()
         criterion = nn.BCELoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
         
         # Convertir datos a tensores
         X_train = torch.FloatTensor(X_train)
@@ -208,7 +210,7 @@ class ModelTrainer:
         model_path = self.model_dir / f'kiosk_anomaly_model_{timestamp}.pth'
         
         # Guardar modelo
-        torch.save(model, model_path)
+        torch.save(model.state_dict(), model_path)
         
         # Guardar métricas
         metrics_path = self.model_dir / f'metrics_{timestamp}.txt'
@@ -218,6 +220,10 @@ class ModelTrainer:
         
         self.logger.info(f"Modelo guardado en: {model_path}")
         self.logger.info(f"Métricas guardadas en: {metrics_path}")
+        
+        # Copiar como modelo por defecto
+        default_path = self.model_dir / 'kiosk_anomaly_model.pth'
+        torch.save(model.state_dict(), default_path)
         
         return str(model_path)
 

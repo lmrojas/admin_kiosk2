@@ -5,6 +5,15 @@
 {% block title %}Lista de Kiosks{% endblock %}
 
 {% block content %}
+<!-- Agregar contenedor de estado de conexión -->
+<div id="connection-status" class="mb-3"></div>
+
+<!-- Agregar contenedor de alertas -->
+<div id="alerts-container" class="mb-3"></div>
+
+<!-- Agregar contenedor de anomalías -->
+<div id="anomaly-container" class="mb-3"></div>
+
 <div class="container mt-4">
     <!-- Filtros -->
     <div class="card mb-4">
@@ -70,7 +79,7 @@
                             </td>
                             <td>{{ "%.2f"|format(kiosk.anomaly_probability * 100) }}%</td>
                             <td>
-                                <a href="{{ url_for('kiosk.details', kiosk_id=kiosk.id) }}" 
+                                <a href="{{ url_for('kiosk.view_kiosk', kiosk_id=kiosk.id) }}" 
                                    class="btn btn-sm btn-info">
                                     Detalles
                                 </a>
@@ -134,7 +143,7 @@
                             </td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="{{ url_for('kiosk.details', kiosk_id=kiosk.id) }}" 
+                                    <a href="{{ url_for('kiosk.view_kiosk', kiosk_id=kiosk.id) }}" 
                                        class="btn btn-sm btn-info">
                                         Detalles
                                     </a>
@@ -170,4 +179,168 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    // Conexión WebSocket
+    const socket = io();
+
+    // Manejo de eventos de conexión
+    socket.on('connect', () => {
+        console.log('Conectado al servidor WebSocket');
+        showConnectionStatus(true);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Desconectado del servidor WebSocket');
+        showConnectionStatus(false);
+    });
+
+    // Función para mostrar estado de conexión
+    function showConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connection-status');
+        if (connected) {
+            statusDiv.innerHTML = '<span class="badge bg-success">Conectado</span>';
+        } else {
+            statusDiv.innerHTML = '<span class="badge bg-danger">Desconectado</span>';
+        }
+    }
+
+    // Escuchar actualizaciones de métricas
+    socket.on('metrics_update', (data) => {
+        updateKioskMetrics(data);
+    });
+
+    // Escuchar alertas
+    socket.on('new_alert', (data) => {
+        showAlert(data);
+    });
+
+    // Escuchar anomalías
+    socket.on('new_anomaly', (data) => {
+        showAnomaly(data);
+        updateAnomalousList(data);
+    });
+
+    // Función para actualizar métricas de un kiosk
+    function updateKioskMetrics(data) {
+        const kioskRow = document.querySelector(`tr[data-kiosk-id="${data.kiosk_id}"]`);
+        if (kioskRow) {
+            // Actualizar estado
+            const statusBadge = kioskRow.querySelector('.status-badge');
+            if (statusBadge) {
+                statusBadge.className = `badge bg-${data.status === 'active' ? 'success' : 'danger'}`;
+                statusBadge.textContent = data.status;
+            }
+
+            // Actualizar barra de salud
+            const healthBar = kioskRow.querySelector('.progress-bar');
+            if (healthBar) {
+                const healthClass = data.health_score > 70 ? 'success' : 
+                                  data.health_score > 30 ? 'warning' : 'danger';
+                healthBar.className = `progress-bar bg-${healthClass}`;
+                healthBar.style.width = `${data.health_score}%`;
+                healthBar.textContent = `${data.health_score.toFixed(1)}%`;
+            }
+
+            // Actualizar última conexión
+            const lastOnline = kioskRow.querySelector('.last-online');
+            if (lastOnline) {
+                lastOnline.textContent = new Date().toLocaleString();
+            }
+        }
+    }
+
+    // Función para mostrar alertas
+    function showAlert(data) {
+        const alertsContainer = document.getElementById('alerts-container');
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-warning alert-dismissible fade show';
+        alert.innerHTML = `
+            <strong>${data.kiosk_name}</strong>: ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertsContainer.prepend(alert);
+        
+        // Eliminar alertas antiguas si hay más de 3
+        const alerts = alertsContainer.getElementsByClassName('alert');
+        if (alerts.length > 3) {
+            alertsContainer.removeChild(alerts[alerts.length - 1]);
+        }
+    }
+
+    // Función para mostrar anomalías
+    function showAnomaly(data) {
+        const anomalyContainer = document.getElementById('anomaly-container');
+        const anomaly = document.createElement('div');
+        anomaly.className = 'alert alert-danger mb-2';
+        anomaly.innerHTML = `
+            <h5 class="alert-heading">¡Anomalía Detectada en ${data.kiosk_name}!</h5>
+            <p>Probabilidad: ${(data.probability * 100).toFixed(2)}%</p>
+            <hr>
+            <p class="mb-0">Métricas Anómalas:</p>
+            <ul>
+                ${Object.entries(data.metrics).map(([key, value]) => 
+                    `<li>${key}: ${value}</li>`
+                ).join('')}
+            </ul>
+        `;
+        anomalyContainer.prepend(anomaly);
+        
+        // Eliminar anomalías antiguas si hay más de 2
+        const anomalies = anomalyContainer.getElementsByClassName('alert');
+        if (anomalies.length > 2) {
+            anomalyContainer.removeChild(anomalies[anomalies.length - 1]);
+        }
+    }
+
+    // Función para actualizar la lista de kiosks anómalos
+    function updateAnomalousList(data) {
+        const anomalousTable = document.querySelector('#anomalous-kiosks table tbody');
+        if (!anomalousTable) return;
+
+        // Verificar si el kiosk ya está en la lista
+        const existingRow = anomalousTable.querySelector(`tr[data-kiosk-id="${data.kiosk_id}"]`);
+        if (existingRow) {
+            // Actualizar la probabilidad
+            const probCell = existingRow.querySelector('.anomaly-prob');
+            if (probCell) {
+                probCell.textContent = `${(data.probability * 100).toFixed(2)}%`;
+            }
+        } else {
+            // Agregar nueva fila
+            const newRow = document.createElement('tr');
+            newRow.setAttribute('data-kiosk-id', data.kiosk_id);
+            newRow.innerHTML = `
+                <td>${data.kiosk_name}</td>
+                <td>${data.location || 'N/A'}</td>
+                <td>
+                    <span class="badge bg-danger">anomaly</span>
+                </td>
+                <td>
+                    <div class="progress">
+                        <div class="progress-bar bg-danger" role="progressbar" 
+                             style="width: ${data.health_score}%">
+                            ${data.health_score.toFixed(1)}%
+                        </div>
+                    </div>
+                </td>
+                <td class="anomaly-prob">${(data.probability * 100).toFixed(2)}%</td>
+                <td>
+                    <a href="/kiosk/${data.kiosk_id}" class="btn btn-sm btn-info">
+                        Detalles
+                    </a>
+                </td>
+            `;
+            anomalousTable.prepend(newRow);
+
+            // Limitar a 5 kiosks anómalos
+            if (anomalousTable.children.length > 5) {
+                anomalousTable.removeChild(anomalousTable.lastElementChild);
+            }
+        }
+    }
+</script>
 {% endblock %} 

@@ -80,6 +80,10 @@ class Config:
     SECURITY_RECOVERABLE = True
     SECURITY_CHANGEABLE = True
     
+    # Configuración CSRF
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = 3600  # 1 hora
+    
     # Headers de seguridad
     SECURITY_HEADERS = {
         'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',

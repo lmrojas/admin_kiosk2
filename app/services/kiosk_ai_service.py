@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from typing import Dict, Union
+import logging
 
 class SimpleAnomalyDetector(nn.Module):
     """
@@ -50,14 +51,25 @@ class KioskAIService:
             torch.nn.Module: Modelo de IA cargado
         """
         try:
-            model = torch.load(path, map_location=torch.device('cpu'), weights_only=True)
+            # Crear modelo base
+            model = SimpleAnomalyDetector()
+            
+            # Cargar estado del modelo
+            try:
+                # Cargar state_dict con weights_only=True
+                state_dict = torch.load(path, map_location=torch.device('cpu'), weights_only=True)
+                model.load_state_dict(state_dict)
+                logging.info(f"Modelo cargado exitosamente desde {path}")
+            except FileNotFoundError:
+                logging.warning(f"[WARN] Modelo no encontrado en {path}. Usando modelo por defecto.")
+            except Exception as e:
+                logging.error(f"[ERROR] No se pudo cargar el modelo: {e}")
+            
             model.eval()  # Modo de evaluación
             return model
-        except FileNotFoundError:
-            print(f"[WARN] Modelo no encontrado en {path}. Creando modelo por defecto.")
-            return SimpleAnomalyDetector()
+            
         except Exception as e:
-            print(f"[ERROR] No se pudo cargar el modelo: {e}")
+            logging.error(f"[ERROR] Error al inicializar el modelo: {e}")
             return SimpleAnomalyDetector()
 
     def predict_anomaly(self, kiosk_data: Dict[str, Union[float, int]]) -> float:

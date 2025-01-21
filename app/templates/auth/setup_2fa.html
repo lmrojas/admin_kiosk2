@@ -32,6 +32,7 @@
                         Ingresa el código de 6 dígitos que aparece en tu aplicación de autenticación
                     </p>
                     <form class="mt-4" action="{{ url_for('auth.setup_2fa') }}" method="POST">
+                        {{ csrf_token() }}
                         <div>
                             <label for="code" class="sr-only">Código de verificación</label>
                             <input id="code" name="code" type="text" required

@@ -6,6 +6,7 @@ from app.models.kiosk import Kiosk, SensorData
 from app.services.kiosk_ai_service import KioskAIService
 from datetime import datetime, timedelta
 import uuid
+import math
 
 class KioskService:
     """
@@ -114,4 +115,95 @@ class KioskService:
         Returns:
             List[Kiosk]: Lista de todos los kiosks
         """
-        return Kiosk.query.all() 
+        return Kiosk.query.all()
+
+    @staticmethod
+    def get_nearby_kiosks(lat, lon, radius=5.0):
+        """
+        Obtiene kiosks cercanos a una ubicación dada.
+        Args:
+            lat (float): Latitud del punto central
+            lon (float): Longitud del punto central
+            radius (float): Radio de búsqueda en kilómetros
+        Returns:
+            List[Kiosk]: Lista de kiosks dentro del radio especificado
+        """
+        # Convertir radio de km a grados (aproximación)
+        # 1 grado ≈ 111.32 km en el ecuador
+        degree_radius = radius / 111.32
+        
+        # Buscar kiosks dentro del radio usando una aproximación rectangular
+        # Esto es una simplificación y puede ser mejorada usando fórmulas más precisas
+        nearby_kiosks = Kiosk.query.filter(
+            Kiosk.latitude.between(lat - degree_radius, lat + degree_radius),
+            Kiosk.longitude.between(lon - degree_radius, lon + degree_radius)
+        ).all()
+        
+        # Filtrar resultados usando la fórmula de Haversine para mayor precisión
+        result = []
+        for kiosk in nearby_kiosks:
+            distance = KioskService._calculate_distance(lat, lon, kiosk.latitude, kiosk.longitude)
+            if distance <= radius:
+                result.append(kiosk)
+        
+        return result
+
+    @staticmethod
+    def _calculate_distance(lat1, lon1, lat2, lon2):
+        """
+        Calcula la distancia entre dos puntos usando la fórmula de Haversine.
+        Returns:
+            float: Distancia en kilómetros
+        """
+        R = 6371  # Radio de la Tierra en km
+        
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        distance = R * c
+        
+        return distance 
+
+    @staticmethod
+    def get_kiosk_by_id(kiosk_id):
+        """
+        Obtiene un kiosk por su ID.
+        Args:
+            kiosk_id (int): ID del kiosk a buscar
+        Returns:
+            Kiosk: El kiosk encontrado o None si no existe
+        """
+        return Kiosk.query.get(kiosk_id)
+
+    @staticmethod
+    def update_kiosk(kiosk_id, data):
+        """
+        Actualiza un kiosk existente.
+        Args:
+            kiosk_id (int): ID del kiosk a actualizar
+            data (dict): Diccionario con los datos a actualizar
+        Returns:
+            Kiosk: El kiosk actualizado
+        Raises:
+            ValueError: Si el kiosk no existe o los datos son inválidos
+        """
+        kiosk = KioskService.get_kiosk_by_id(kiosk_id)
+        if not kiosk:
+            raise ValueError(f"Kiosk con ID {kiosk_id} no encontrado")
+
+        # Validar nombre
+        if 'name' in data and not data['name']:
+            raise ValueError("El nombre del kiosk es obligatorio")
+
+        # Actualizar campos básicos
+        for field in ['name', 'location', 'status', 'cpu_model', 'ram_total', 
+                     'storage_total', 'ip_address', 'mac_address', 'latitude',
+                     'longitude', 'altitude']:
+            if field in data:
+                setattr(kiosk, field, data[field])
+
+        db.session.commit()
+        return kiosk 

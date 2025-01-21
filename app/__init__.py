@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_socketio import SocketIO
+from flask_wtf.csrf import CSRFProtect
 from config.default import config
 from config.logging_config import LoggingConfig
 import logging
@@ -16,6 +17,7 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'info'
 socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet')
+csrf = CSRFProtect()
 
 def create_app(config_name='development'):
     app = Flask(__name__)
@@ -24,6 +26,7 @@ def create_app(config_name='development'):
     # Inicializar extensiones
     db.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
     
     # Configurar logging
     LoggingConfig.configure_logging(app)

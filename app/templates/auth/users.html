@@ -35,6 +35,7 @@
                             <td>
                                 {% if current_user.is_admin() %}
                                 <form action="{{ url_for('auth.update_user_role', user_id=user.id) }}" method="POST" class="d-inline">
+                                    {{ csrf_token() }}
                                     <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
                                         {% for role in roles %}
                                         <option value="{{ role.name }}" {% if user.role_name == role.name %}selected{% endif %}>
@@ -64,6 +65,7 @@
                             <td>
                                 {% if current_user.is_admin() and user != current_user %}
                                 <form action="{{ url_for('auth.toggle_user_status', user_id=user.id) }}" method="POST" class="d-inline">
+                                    {{ csrf_token() }}
                                     {% if user.is_active %}
                                     <button type="submit" class="btn btn-danger btn-sm" 
                                             onclick="return confirm('¿Estás seguro de desactivar este usuario?')">

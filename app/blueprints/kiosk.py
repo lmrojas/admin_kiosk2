@@ -36,70 +36,47 @@ def view_kiosk(kiosk_id):
         flash('Kiosk no encontrado', 'error')
         return redirect(url_for('kiosk.list_kiosks'))
     
-    return render_template('kiosk/detail.html', kiosk=kiosk)
+    return render_template('kiosk/details.html', kiosk=kiosk)
 
-@kiosk_bp.route('/<int:kiosk_id>/metrics')
-@login_required
-@permission_required(UserPermission.VIEW_KIOSK.value)
-def get_kiosk_metrics(kiosk_id):
-    """
-    Obtener métricas de un kiosk.
-    Requiere permiso: VIEW_KIOSK
-    """
-    metrics = kiosk_service.get_kiosk_metrics(kiosk_id)
-    return jsonify(metrics)
-
-@kiosk_bp.route('/<int:kiosk_id>/status')
-@login_required
-@permission_required(UserPermission.VIEW_KIOSK.value)
-def get_kiosk_status(kiosk_id):
-    """
-    Obtener estado actual de un kiosk.
-    Requiere permiso: VIEW_KIOSK
-    """
-    status = kiosk_service.get_kiosk_status(kiosk_id)
-    return jsonify(status)
-
-@kiosk_bp.route('/<int:kiosk_id>/update', methods=['POST'])
+@kiosk_bp.route('/<int:kiosk_id>/update', methods=['GET', 'POST'])
 @login_required
 @permission_required(UserPermission.UPDATE_KIOSK.value)
 def update_kiosk(kiosk_id):
     """
-    Actualizar información de un kiosk.
+    Actualizar un kiosk existente.
     Requiere permiso: UPDATE_KIOSK
     """
-    data = request.get_json()
-    try:
-        kiosk = kiosk_service.update_kiosk(kiosk_id, data)
-        return jsonify({'message': 'Kiosk actualizado exitosamente', 'kiosk': kiosk.to_dict()})
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        logging.error(f"Error actualizando kiosk {kiosk_id}: {str(e)}")
-        return jsonify({'error': 'Error interno del servidor'}), 500
-
-@kiosk_bp.route('/<int:kiosk_id>/location', methods=['POST'])
-@login_required
-@permission_required(UserPermission.UPDATE_KIOSK.value)
-def update_kiosk_location(kiosk_id):
-    """
-    Actualizar ubicación de un kiosk.
-    Requiere permiso: UPDATE_KIOSK
-    """
-    data = request.get_json()
-    try:
-        kiosk = kiosk_service.update_kiosk_location(
-            kiosk_id,
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude'),
-            altitude=data.get('altitude')
-        )
-        return jsonify({'message': 'Ubicación actualizada exitosamente', 'kiosk': kiosk.to_dict()})
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        logging.error(f"Error actualizando ubicación del kiosk {kiosk_id}: {str(e)}")
-        return jsonify({'error': 'Error interno del servidor'}), 500
+    kiosk = kiosk_service.get_kiosk_by_id(kiosk_id)
+    if not kiosk:
+        flash('Kiosk no encontrado', 'error')
+        return redirect(url_for('kiosk.list_kiosks'))
+    
+    if request.method == 'POST':
+        try:
+            data = {
+                'name': request.form.get('name'),
+                'location': request.form.get('location'),
+                'status': request.form.get('status'),
+                'cpu_model': request.form.get('cpu_model'),
+                'ram_total': float(request.form.get('ram_total')) if request.form.get('ram_total') else None,
+                'storage_total': float(request.form.get('storage_total')) if request.form.get('storage_total') else None,
+                'ip_address': request.form.get('ip_address'),
+                'mac_address': request.form.get('mac_address'),
+                'latitude': float(request.form.get('latitude')) if request.form.get('latitude') else None,
+                'longitude': float(request.form.get('longitude')) if request.form.get('longitude') else None,
+                'altitude': float(request.form.get('altitude')) if request.form.get('altitude') else None
+            }
+            
+            kiosk = kiosk_service.update_kiosk(kiosk_id, data)
+            flash('Kiosk actualizado exitosamente', 'success')
+            return redirect(url_for('kiosk.view_kiosk', kiosk_id=kiosk.id))
+        except ValueError as e:
+            flash(str(e), 'error')
+        except Exception as e:
+            flash('Error al actualizar el kiosk', 'error')
+            logging.error(f'Error actualizando kiosk: {str(e)}')
+    
+    return render_template('kiosk/update.html', kiosk=kiosk)
 
 @kiosk_bp.route('/create', methods=['GET', 'POST'])
 @login_required
@@ -127,4 +104,70 @@ def create_kiosk():
             flash('Error al crear el kiosk', 'error')
             logging.error(f'Error creando kiosk: {str(e)}')
     
-    return render_template('kiosk/create.html') 
+    return render_template('kiosk/create.html')
+
+@kiosk_bp.route('/api/nearby')
+@login_required
+@permission_required(UserPermission.VIEW_KIOSK.value)
+def get_nearby_kiosks():
+    """
+    Obtener kiosks cercanos a una ubicación.
+    Requiere permiso: VIEW_KIOSK
+    """
+    try:
+        lat = float(request.args.get('lat'))
+        lon = float(request.args.get('lon'))
+        radius = float(request.args.get('radius', 5))  # Radio en kilómetros, default 5km
+        
+        nearby_kiosks = kiosk_service.get_nearby_kiosks(lat, lon, radius)
+        return jsonify([k.to_dict() for k in nearby_kiosks])
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': 'Parámetros inválidos'}), 400
+    except Exception as e:
+        logging.error(f"Error obteniendo kiosks cercanos: {str(e)}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@kiosk_bp.route('/api/kiosk/<int:kiosk_id>/metrics', methods=['POST'])
+@login_required
+@permission_required(UserPermission.UPDATE_KIOSK.value)
+def update_kiosk_metrics(kiosk_id):
+    """
+    Actualiza las métricas de un kiosk.
+    Requiere permiso: UPDATE_KIOSK
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No se recibieron datos'}), 400
+
+        # Registrar datos de sensores
+        sensor_data = kiosk_service.register_sensor_data(
+            kiosk_id=kiosk_id,
+            cpu_usage=data.get('cpu_usage', 0),
+            memory_usage=data.get('memory_usage', 0),
+            network_latency=data.get('network_latency')
+        )
+
+        # Actualizar estado y hardware si se proporcionan
+        if 'status' in data or 'hardware_info' in data:
+            kiosk_service.update_kiosk_status(
+                kiosk_id=kiosk_id,
+                status=data.get('status'),
+                hardware_info=data.get('hardware_info')
+            )
+
+        # Actualizar ubicación si se proporciona
+        if 'location' in data:
+            location_data = data['location']
+            kiosk_service.update_kiosk(kiosk_id, {
+                'latitude': location_data.get('latitude'),
+                'longitude': location_data.get('longitude'),
+                'altitude': location_data.get('altitude')
+            })
+
+        return jsonify({'success': True}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logging.error(f"Error actualizando métricas del kiosk {kiosk_id}: {str(e)}")
+        return jsonify({'error': 'Error interno del servidor'}), 500 

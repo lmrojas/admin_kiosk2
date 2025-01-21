@@ -103,6 +103,29 @@ class Kiosk(db.Model):
         """
         return f'<Kiosk {self.name} (UUID: {self.uuid}, Health: {self.health_score:.2f})>'
 
+    def to_dict(self):
+        """
+        Convierte el kiosk a un diccionario para la API.
+        No incluye lógica de negocio compleja.
+        """
+        return {
+            'id': self.id,
+            'uuid': self.uuid,
+            'name': self.name,
+            'location': self.location,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'altitude': self.altitude,
+            'location_accuracy': self.location_accuracy,
+            'location_updated_at': self.location_updated_at.isoformat() if self.location_updated_at else None,
+            'status': self.status,
+            'last_online': self.last_online.isoformat() if self.last_online else None,
+            'health_score': self.health_score,
+            'anomaly_probability': self.anomaly_probability,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
 # Modelo de SensorData para complementar Kiosk
 class SensorData(db.Model):
     """

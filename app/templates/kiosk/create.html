@@ -9,6 +9,7 @@
     <h2>Crear Nuevo Kiosk</h2>
     
     <form method="POST" class="mt-4">
+        {{ csrf_token() }}
         <div class="form-group">
             <label for="name">Nombre del Kiosk</label>
             <input type="text" class="form-control" id="name" name="name" required>
@@ -37,16 +38,6 @@
             alert('El nombre del kiosk es obligatorio');
             return;
         }
-    });
-
-    // Formateo automático de MAC address
-    document.getElementById('mac_address').addEventListener('input', function(e) {
-        let value = e.target.value.replace(/[^0-9A-Fa-f]/g, '');
-        if (value.length > 12) value = value.slice(0, 12);
-        if (value.length > 0) {
-            value = value.match(/.{1,2}/g).join(':');
-        }
-        e.target.value = value.toUpperCase();
     });
 </script>
 {% endblock %}

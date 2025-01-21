@@ -158,6 +158,15 @@
         </div>
     </div>
 
+    <!-- Agregar contenedor de estado de conexión -->
+    <div id="connection-status" class="mb-3"></div>
+
+    <!-- Agregar contenedor de alertas -->
+    <div id="alerts-container" class="mb-3"></div>
+
+    <!-- Agregar contenedor de anomalías -->
+    <div id="anomaly-container" class="mb-3"></div>
+
     <!-- Botones de Acción -->
     <div class="mt-4">
         <a href="{{ url_for('kiosk.update_kiosk', kiosk_id=kiosk.id) }}" class="btn btn-warning">
@@ -173,6 +182,7 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
     // Inicialización del mapa
     {% if kiosk.latitude and kiosk.longitude %}
@@ -260,5 +270,160 @@
 
     // Actualizar cada 30 segundos
     setInterval(updateChart, 30000);
+
+    // Conexión WebSocket
+    const socket = io();
+    let chart;  // Variable global para el gráfico
+
+    // Manejo de eventos de conexión
+    socket.on('connect', () => {
+        console.log('Conectado al servidor WebSocket');
+        showConnectionStatus(true);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Desconectado del servidor WebSocket');
+        showConnectionStatus(false);
+    });
+
+    // Función para mostrar estado de conexión
+    function showConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connection-status');
+        if (connected) {
+            statusDiv.innerHTML = '<span class="badge bg-success">Conectado</span>';
+        } else {
+            statusDiv.innerHTML = '<span class="badge bg-danger">Desconectado</span>';
+        }
+    }
+
+    // Escuchar actualizaciones de métricas
+    socket.on('metrics_update', (data) => {
+        if (data.kiosk_id === {{ kiosk.id }}) {
+            updateMetrics(data);
+        }
+    });
+
+    // Escuchar alertas
+    socket.on('new_alert', (data) => {
+        if (data.kiosk_id === {{ kiosk.id }}) {
+            showAlert(data);
+        }
+    });
+
+    // Escuchar anomalías
+    socket.on('new_anomaly', (data) => {
+        if (data.kiosk_id === {{ kiosk.id }}) {
+            showAnomaly(data);
+        }
+    });
+
+    // Función para actualizar métricas en tiempo real
+    function updateMetrics(data) {
+        // Actualizar indicadores de salud
+        document.getElementById('health-score').style.width = `${data.health_score}%`;
+        document.getElementById('health-score').textContent = `${data.health_score.toFixed(1)}%`;
+        
+        // Actualizar probabilidad de anomalía
+        document.getElementById('anomaly-prob').textContent = 
+            `${(data.anomaly_probability * 100).toFixed(2)}%`;
+            
+        // Actualizar gráfico si existe
+        if (chart) {
+            const timestamp = new Date(data.timestamp).toLocaleTimeString();
+            
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(data.cpu_usage);
+            chart.data.datasets[1].data.push(data.memory_usage);
+            chart.data.datasets[2].data.push(data.network_latency);
+            
+            // Mantener solo los últimos 20 puntos
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            
+            chart.update();
+        }
+    }
+
+    // Función para mostrar alertas
+    function showAlert(data) {
+        const alertsContainer = document.getElementById('alerts-container');
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-warning alert-dismissible fade show';
+        alert.innerHTML = `
+            <strong>${data.timestamp}</strong>: ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertsContainer.prepend(alert);
+        
+        // Eliminar alertas antiguas si hay más de 5
+        const alerts = alertsContainer.getElementsByClassName('alert');
+        if (alerts.length > 5) {
+            alertsContainer.removeChild(alerts[alerts.length - 1]);
+        }
+    }
+
+    // Función para mostrar anomalías
+    function showAnomaly(data) {
+        const anomalyContainer = document.getElementById('anomaly-container');
+        const anomaly = document.createElement('div');
+        anomaly.className = 'alert alert-danger mb-2';
+        anomaly.innerHTML = `
+            <h5 class="alert-heading">¡Anomalía Detectada!</h5>
+            <p>Probabilidad: ${(data.probability * 100).toFixed(2)}%</p>
+            <hr>
+            <p class="mb-0">Métricas Anómalas:</p>
+            <ul>
+                ${Object.entries(data.metrics).map(([key, value]) => 
+                    `<li>${key}: ${value}</li>`
+                ).join('')}
+            </ul>
+        `;
+        anomalyContainer.prepend(anomaly);
+        
+        // Eliminar anomalías antiguas si hay más de 3
+        const anomalies = anomalyContainer.getElementsByClassName('alert');
+        if (anomalies.length > 3) {
+            anomalyContainer.removeChild(anomalies[anomalies.length - 1]);
+        }
+    }
+
+    // Inicializar gráfico con datos históricos
+    const ctx = document.getElementById('sensorChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU (%)',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }, {
+                label: 'Memoria (%)',
+                data: [],
+                borderColor: 'rgb(54, 162, 235)',
+                tension: 0.1
+            }, {
+                label: 'Latencia (ms)',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            animation: {
+                duration: 0
+            }
+        }
+    });
 </script>
 {% endblock %} 

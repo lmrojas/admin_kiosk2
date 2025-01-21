@@ -25,8 +25,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 def init_roles():
-    """Inicializa los roles del sistema"""
-    logger.info("Inicializando roles...")
+    """Inicializa los roles y permisos del sistema"""
+    logger.info("Inicializando roles y permisos...")
     
     # Crear usuario admin si no existe
     admin = User.query.filter_by(username='admin').first()
@@ -41,7 +41,7 @@ def init_roles():
         logger.info("Usuario admin creado")
     
     db.session.commit()
-    logger.info("Roles inicializados correctamente")
+    logger.info("Roles y permisos inicializados correctamente")
 
 if __name__ == '__main__':
     app = create_app()

@@ -17,8 +17,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
-                        <!-- Campo oculto para CSRF -->
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ csrf_token() }}
                         
                         <!-- Estado del Kiosk -->
                         <div class="mb-4">
@@ -140,7 +139,7 @@
                                 Guardar Cambios
                             </button>
                             <div>
-                                <a href="{{ url_for('kiosk.details', kiosk_id=kiosk.id) }}" class="btn btn-info">
+                                <a href="{{ url_for('kiosk.view_kiosk', kiosk_id=kiosk.id) }}" class="btn btn-info">
                                     Ver Detalles
                                 </a>
                                 <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-secondary">
