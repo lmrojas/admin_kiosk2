@@ -1,8 +1,16 @@
 // Dashboard de IA - Admin Kiosk
 
+let socket = null;
+let realtimeData = {
+    predictions: [],
+    anomalies: 0,
+    totalPredictions: 0
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar componentes
     initializeDashboard();
+    initializeWebSocket();
     
     // Event listeners
     document.getElementById('refreshData').addEventListener('click', refreshData);
@@ -24,6 +32,124 @@ function initializeDashboard() {
     refreshData();
 }
 
+function initializeWebSocket() {
+    socket = io();
+    
+    socket.on('connect', () => {
+        console.log('WebSocket conectado');
+        updateConnectionStatus(true);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('WebSocket desconectado');
+        updateConnectionStatus(false);
+    });
+    
+    socket.on('kiosk_prediction', (prediction) => {
+        // Actualizar datos en tiempo real
+        updateRealtimeData(prediction);
+        
+        // Actualizar UI
+        updateRealtimeMetrics();
+        updateRealtimePredictionsList(prediction);
+        
+        // Si es anomalía, mostrar alerta
+        if (prediction.is_anomaly) {
+            showAnomalyAlert(prediction);
+        }
+    });
+}
+
+function updateConnectionStatus(connected) {
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
+        statusElement.className = connected ? 'status-connected' : 'status-disconnected';
+        statusElement.textContent = connected ? 'Conectado' : 'Desconectado';
+    }
+}
+
+function updateRealtimeData(prediction) {
+    // Mantener solo las últimas 100 predicciones
+    realtimeData.predictions.unshift(prediction);
+    if (realtimeData.predictions.length > 100) {
+        realtimeData.predictions.pop();
+    }
+    
+    // Actualizar contadores
+    realtimeData.totalPredictions++;
+    if (prediction.is_anomaly) {
+        realtimeData.anomalies++;
+    }
+}
+
+function updateRealtimeMetrics() {
+    // Actualizar contadores en tiempo real
+    const totalElement = document.getElementById('totalPredictions');
+    const anomaliesElement = document.getElementById('totalAnomalies');
+    const rateElement = document.getElementById('anomalyRate');
+    
+    if (totalElement) {
+        totalElement.textContent = realtimeData.totalPredictions;
+    }
+    if (anomaliesElement) {
+        anomaliesElement.textContent = realtimeData.anomalies;
+    }
+    if (rateElement && realtimeData.totalPredictions > 0) {
+        const rate = (realtimeData.anomalies / realtimeData.totalPredictions * 100).toFixed(2);
+        rateElement.textContent = `${rate}%`;
+    }
+}
+
+function updateRealtimePredictionsList(prediction) {
+    const container = document.getElementById('realtimePredictions');
+    if (!container) return;
+    
+    // Crear elemento para la nueva predicción
+    const element = document.createElement('div');
+    element.className = `prediction-item ${prediction.is_anomaly ? 'anomaly' : 'normal'}`;
+    element.innerHTML = `
+        <div class="prediction-header">
+            <span class="kiosk-id">Kiosk #${prediction.kiosk_id}</span>
+            <span class="timestamp">${new Date(prediction.timestamp).toLocaleTimeString()}</span>
+        </div>
+        <div class="prediction-metrics">
+            <div>CPU: ${prediction.metrics.cpu_usage.toFixed(1)}%</div>
+            <div>Memoria: ${prediction.metrics.memory_usage.toFixed(1)}%</div>
+            <div>Latencia: ${prediction.metrics.network_latency.toFixed(0)}ms</div>
+        </div>
+        <div class="prediction-confidence">
+            Confianza: ${(prediction.confidence * 100).toFixed(1)}%
+        </div>
+    `;
+    
+    // Agregar al inicio de la lista
+    container.insertBefore(element, container.firstChild);
+    
+    // Mantener solo los últimos 10 elementos
+    while (container.children.length > 10) {
+        container.removeChild(container.lastChild);
+    }
+}
+
+function showAnomalyAlert(prediction) {
+    const alertElement = document.createElement('div');
+    alertElement.className = 'anomaly-alert';
+    alertElement.innerHTML = `
+        <strong>¡Anomalía Detectada!</strong><br>
+        Kiosk #${prediction.kiosk_id}<br>
+        CPU: ${prediction.metrics.cpu_usage.toFixed(1)}%<br>
+        Memoria: ${prediction.metrics.memory_usage.toFixed(1)}%<br>
+        Latencia: ${prediction.metrics.network_latency.toFixed(0)}ms
+    `;
+    
+    document.body.appendChild(alertElement);
+    
+    // Remover alerta después de 5 segundos
+    setTimeout(() => {
+        alertElement.remove();
+    }, 5000);
+}
+
 async function refreshData() {
     const params = {
         model_version: document.getElementById('modelVersion').value,
@@ -32,8 +158,16 @@ async function refreshData() {
     };
     
     try {
-        const response = await fetch('/api/ai/metrics?' + new URLSearchParams(params));
+        const response = await fetch('/ai/api/metrics?' + new URLSearchParams(params));
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
+        
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
         
         updateDashboard(data);
     } catch (error) {
@@ -49,14 +183,8 @@ function updateDashboard(data) {
     // Actualizar gráficos
     updateCharts(data);
     
-    // Actualizar análisis de drift
-    updateDriftAnalysis(data.drift);
-    
-    // Actualizar matriz de confusión
-    updateConfusionMatrix(data.metrics.confusion_matrix);
-    
-    // Actualizar análisis de errores
-    updateErrorAnalysis(data.errors);
+    // Actualizar tabla de errores
+    updateErrorCasesTable(data.error_cases);
 }
 
 function updateMainMetrics(metrics) {
@@ -65,9 +193,6 @@ function updateMainMetrics(metrics) {
     document.getElementById('rocAuc').textContent = metrics.roc_auc.toFixed(3);
     document.getElementById('prAuc').textContent = metrics.pr_auc.toFixed(3);
     document.getElementById('meanConfidence').textContent = `${(metrics.mean_confidence * 100).toFixed(2)}%`;
-    
-    // Actualizar tendencias
-    updateTrendIndicator('accuracy', metrics.accuracy_trend);
 }
 
 function updateCharts(data) {
@@ -136,157 +261,6 @@ function updateCharts(data) {
             }
         }
     });
-    
-    // Confidence Distribution
-    const confidenceData = data.metrics.prob_distribution;
-    Plotly.newPlot('confidenceDistribution', [{
-        x: Object.keys(confidenceData),
-        y: Object.values(confidenceData),
-        type: 'bar'
-    }], {
-        title: 'Distribución de Confianza',
-        xaxis: { title: 'Confianza' },
-        yaxis: { title: 'Frecuencia' }
-    });
-}
-
-function updateDriftAnalysis(drift) {
-    // Distribution Shift
-    const distCtx = document.getElementById('distributionChart').getContext('2d');
-    new Chart(distCtx, {
-        type: 'bar',
-        data: {
-            labels: Object.keys(drift.distribution_shift.distribution_period2),
-            datasets: [
-                {
-                    label: 'Período 1',
-                    data: Object.values(drift.distribution_shift.distribution_period1),
-                    backgroundColor: 'rgba(44, 62, 80, 0.6)'
-                },
-                {
-                    label: 'Período 2',
-                    data: Object.values(drift.distribution_shift.distribution_period2),
-                    backgroundColor: 'rgba(52, 152, 219, 0.6)'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-    
-    // Feature Drift Heatmap
-    const featureDrift = drift.feature_drift;
-    const features = Object.keys(featureDrift);
-    const driftScores = features.map(f => featureDrift[f].drift_score);
-    
-    Plotly.newPlot('featureDriftHeatmap', [{
-        z: [driftScores],
-        x: features,
-        type: 'heatmap',
-        colorscale: 'RdYlBu'
-    }], {
-        title: 'Feature Drift Scores',
-        height: 200
-    });
-    
-    // Performance Trend
-    const trendCtx = document.getElementById('performanceTrendChart').getContext('2d');
-    new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: drift.performance_decay.window_metrics.map(w => `Ventana ${w.window}`),
-            datasets: [{
-                label: 'Accuracy',
-                data: drift.performance_decay.window_metrics.map(w => w.accuracy),
-                borderColor: '#2c3e50',
-                fill: false
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-    
-    // Actualizar alertas
-    updateDriftAlerts(drift.alerts);
-}
-
-function updateConfusionMatrix(matrix) {
-    Plotly.newPlot('confusionMatrix', [{
-        z: matrix,
-        type: 'heatmap',
-        colorscale: 'Viridis'
-    }], {
-        title: 'Matriz de Confusión',
-        height: 400
-    });
-}
-
-function updateErrorAnalysis(errors) {
-    // Error Distribution
-    const errorDistCtx = document.getElementById('errorDistribution').getContext('2d');
-    new Chart(errorDistCtx, {
-        type: 'bar',
-        data: {
-            labels: errors.distribution.labels,
-            datasets: [{
-                label: 'Errores',
-                data: errors.distribution.values,
-                backgroundColor: 'rgba(231, 76, 60, 0.6)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-    
-    // Errors by Confidence
-    const errorConfCtx = document.getElementById('errorsByConfidence').getContext('2d');
-    new Chart(errorConfCtx, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label: 'Errores vs Confianza',
-                data: errors.by_confidence.map(e => ({
-                    x: e.confidence,
-                    y: e.error_rate
-                })),
-                backgroundColor: 'rgba(231, 76, 60, 0.6)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Confianza'
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Tasa de Error'
-                    }
-                }
-            }
-        }
-    });
-    
-    // Actualizar tabla de casos problemáticos
-    updateErrorCasesTable(errors.cases);
-}
-
-function updateDriftAlerts(alerts) {
-    const alertsContainer = document.querySelector('.drift-alerts');
-    alertsContainer.innerHTML = alerts.map(alert => 
-        `<div class="alert alert-${alert.severity.toLowerCase()}">${alert.message}</div>`
-    ).join('');
 }
 
 function updateErrorCasesTable(cases) {
@@ -300,15 +274,6 @@ function updateErrorCasesTable(cases) {
             <td>${(errorCase.error_margin * 100).toFixed(2)}%</td>
         </tr>`
     ).join('');
-}
-
-function updateTrendIndicator(metric, trend) {
-    const trendIcon = document.querySelector(`#${metric} .trend-icon`);
-    const trendValue = document.querySelector(`#${metric} .trend-value`);
-    
-    trendIcon.className = 'trend-icon ' + (trend > 0 ? 'trend-up' : 'trend-down');
-    trendValue.textContent = `${Math.abs(trend).toFixed(2)}%`;
-    trendValue.style.color = trend > 0 ? '#28a745' : '#dc3545';
 }
 
 function showError(message) {

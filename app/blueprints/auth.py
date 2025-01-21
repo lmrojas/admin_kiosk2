@@ -19,10 +19,14 @@ logger = logging.getLogger(__name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Vista de login con soporte 2FA."""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+        
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         code_2fa = request.form.get('code_2fa')
+        remember = True  # Mantener la sesión activa
         
         try:
             user = auth_service.authenticate(username, password)
@@ -35,13 +39,19 @@ def login():
                 if not code_2fa:
                     # Guardar usuario en sesión y redirigir a verificación 2FA
                     session['pending_user_id'] = user.id
+                    session.permanent = True  # Usar tiempo límite configurado
                     return redirect(url_for('auth.verify_2fa'))
                 
                 if not two_factor_service.verify_code(user, code_2fa):
                     flash('Código 2FA inválido', 'error')
                     return redirect(url_for('auth.verify_2fa'))
             
-            login_user(user)
+            login_user(user, remember=remember)
+            session.permanent = True  # Usar tiempo límite configurado
+            
+            # Limpiar datos sensibles de la sesión
+            session.pop('pending_user_id', None)
+            
             logger.info(f'Usuario {user.username} ha iniciado sesión')
             return redirect(url_for('main.dashboard'))
             
@@ -105,6 +115,8 @@ def verify_2fa():
 def logout():
     """Vista de cierre de sesión."""
     username = current_user.username
+    # Limpiar la sesión completamente
+    session.clear()
     logout_user()
     logger.info(f'Usuario {username} ha cerrado sesión')
     flash('Has cerrado sesión exitosamente', 'success')

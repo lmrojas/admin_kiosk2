@@ -1,17 +1,23 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}Dashboard IA - Admin Kiosk{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/ai_dashboard.css' %}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_dashboard.css') }}">
 {% endblock %}
 
 {% block content %}
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
 <div class="dashboard-container">
     <!-- Header -->
     <div class="dashboard-header">
         <h1>Dashboard de Inteligencia Artificial</h1>
+        <div class="connection-status">
+            Estado: <span id="connectionStatus" class="status-disconnected">Desconectado</span>
+        </div>
         <div class="dashboard-controls">
             <select id="modelVersion" class="form-select">
                 {% for version in model_versions %}
@@ -26,29 +32,56 @@
         </div>
     </div>
 
+    <!-- Sección en Tiempo Real -->
+    <div class="realtime-section">
+        <h2>Monitoreo en Tiempo Real</h2>
+        <div class="realtime-grid">
+            <div class="realtime-metrics">
+                <div class="realtime-metric-card">
+                    <h3>Predicciones Totales</h3>
+                    <div class="metric-value" id="totalPredictions">0</div>
+                </div>
+                <div class="realtime-metric-card">
+                    <h3>Anomalías Detectadas</h3>
+                    <div class="metric-value" id="totalAnomalies">0</div>
+                </div>
+                <div class="realtime-metric-card">
+                    <h3>Tasa de Anomalías</h3>
+                    <div class="metric-value" id="anomalyRate">0.00%</div>
+                </div>
+            </div>
+            <div class="realtime-predictions">
+                <h3>Últimas Predicciones</h3>
+                <div id="realtimePredictions" class="predictions-list">
+                    <!-- Las predicciones se agregarán dinámicamente aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Métricas Principales -->
     <div class="metrics-grid">
         <div class="metric-card">
             <h3>Precisión General</h3>
-            <div class="metric-value" id="overallAccuracy">{{ metrics.accuracy }}%</div>
+            <div class="metric-value" id="overallAccuracy">{{ (metrics.accuracy * 100)|round(2) if metrics.accuracy is defined else '0.00' }}%</div>
             <div class="metric-trend">
                 <span class="trend-icon"></span>
-                <span class="trend-value">{{ metrics.accuracy_trend }}%</span>
+                <span class="trend-value">{{ metrics.accuracy_trend|default('0.00') }}%</span>
             </div>
         </div>
         <div class="metric-card">
             <h3>ROC AUC</h3>
-            <div class="metric-value" id="rocAuc">{{ metrics.roc_auc }}</div>
+            <div class="metric-value" id="rocAuc">{{ metrics.roc_auc|round(3) if metrics.roc_auc is defined else '0.000' }}</div>
             <canvas id="rocCurve"></canvas>
         </div>
         <div class="metric-card">
             <h3>PR AUC</h3>
-            <div class="metric-value" id="prAuc">{{ metrics.pr_auc }}</div>
+            <div class="metric-value" id="prAuc">{{ metrics.pr_auc|round(3) if metrics.pr_auc is defined else '0.000' }}</div>
             <canvas id="prCurve"></canvas>
         </div>
         <div class="metric-card">
             <h3>Confianza Media</h3>
-            <div class="metric-value" id="meanConfidence">{{ metrics.mean_confidence }}%</div>
+            <div class="metric-value" id="meanConfidence">{{ (metrics.mean_confidence * 100)|round(2) if metrics.mean_confidence is defined else '0.00' }}%</div>
             <div id="confidenceDistribution"></div>
         </div>
     </div>
@@ -61,7 +94,7 @@
                 <h3>Distribución de Predicciones</h3>
                 <canvas id="distributionChart"></canvas>
                 <div class="drift-score">
-                    KL Divergence: <span id="klDivergence">{{ drift.kl_divergence }}</span>
+                    KL Divergence: <span id="klDivergence">{{ drift.kl_divergence|round(4) if drift.kl_divergence is defined else '0.0000' }}</span>
                 </div>
             </div>
             <div class="drift-card">
@@ -75,11 +108,15 @@
             <div class="drift-card">
                 <h3>Alertas de Drift</h3>
                 <div class="drift-alerts">
-                    {% for alert in drift.alerts %}
-                    <div class="alert alert-{{ alert.severity|lower }}">
-                        {{ alert.message }}
-                    </div>
-                    {% endfor %}
+                    {% if drift.alerts %}
+                        {% for alert in drift.alerts %}
+                        <div class="alert alert-{{ alert.severity|lower|default('info') }}">
+                            {{ alert.message|default('Sin mensaje de alerta') }}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">No hay alertas de drift</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -90,23 +127,27 @@
         <h2>Matriz de Confusión</h2>
         <div id="confusionMatrix"></div>
         <div class="class-metrics">
-            {% for class, metrics in class_metrics.items %}
-            <div class="class-metric-card">
-                <h4>Clase {{ class }}</h4>
-                <div class="metric-row">
-                    <span>Precisión:</span>
-                    <span>{{ metrics.precision }}%</span>
+            {% if class_metrics %}
+                {% for class, metrics in class_metrics.items() %}
+                <div class="class-metric-card">
+                    <h4>Clase {{ class }}</h4>
+                    <div class="metric-row">
+                        <span>Precisión:</span>
+                        <span>{{ (metrics.precision * 100)|round(2) if metrics.precision is defined else '0.00' }}%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>Recall:</span>
+                        <span>{{ (metrics.recall * 100)|round(2) if metrics.recall is defined else '0.00' }}%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>F1-Score:</span>
+                        <span>{{ (metrics.f1 * 100)|round(2) if metrics.f1 is defined else '0.00' }}%</span>
+                    </div>
                 </div>
-                <div class="metric-row">
-                    <span>Recall:</span>
-                    <span>{{ metrics.recall }}%</span>
-                </div>
-                <div class="metric-row">
-                    <span>F1-Score:</span>
-                    <span>{{ metrics.f1_score }}%</span>
-                </div>
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">No hay métricas por clase disponibles</div>
+            {% endif %}
         </div>
     </div>
 
@@ -149,15 +190,21 @@
                             </tr>
                         </thead>
                         <tbody id="errorCases">
-                            {% for case in error_cases %}
-                            <tr>
-                                <td>{{ case.id }}</td>
-                                <td>{{ case.predicted }}</td>
-                                <td>{{ case.actual }}</td>
-                                <td>{{ case.confidence }}%</td>
-                                <td>{{ case.error_margin }}%</td>
-                            </tr>
-                            {% endfor %}
+                            {% if error_cases %}
+                                {% for case in error_cases %}
+                                <tr>
+                                    <td>{{ case.id }}</td>
+                                    <td>{{ case.predicted|round(2) }}</td>
+                                    <td>{{ case.actual|round(2) }}</td>
+                                    <td>{{ (case.confidence * 100)|round(2) if case.confidence is defined else '0.00' }}%</td>
+                                    <td>{{ (case.error_margin * 100)|round(2) if case.error_margin is defined else '0.00' }}%</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No hay casos de error registrados</td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -168,7 +215,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/chart.js' %}"></script>
-<script src="{% static 'js/plotly.js' %}"></script>
-<script src="{% static 'js/ai_dashboard.js' %}"></script>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/plotly.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_dashboard.js') }}"></script>
 {% endblock %} 

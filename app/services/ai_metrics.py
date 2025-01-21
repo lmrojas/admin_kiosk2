@@ -1,72 +1,152 @@
 """
 Servicio de métricas de IA para Admin Kiosk.
-Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+Este código solo puede ser modificado siguiendo lo establecido en 'cura.md' y 'project_custom_structure.txt'
 """
 
-from app.models.ai import ModelMetrics, PredictionLog, DriftMetrics
+from app.models.ai import ModelMetrics, PredictionLog
 from datetime import datetime, timedelta
 from sklearn.metrics import (
     roc_auc_score, precision_recall_curve, auc,
-    confusion_matrix, precision_score, recall_score, f1_score
+    confusion_matrix, precision_score, recall_score, f1_score,
+    roc_curve
 )
 import numpy as np
 import logging
+from app import db
+from sqlalchemy import func, and_
+from flask import current_app
 
 logger = logging.getLogger(__name__)
 
 class AIMetricsService:
     """Servicio para gestionar métricas del modelo de IA."""
-
+    
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(AIMetricsService, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if not self._initialized:
+            self._initialized = True
+    
     def get_model_versions(self):
-        """Obtiene las versiones disponibles del modelo."""
-        return list(ModelMetrics.objects.values_list(
-            'version', flat=True
-        ).distinct().order_by('-timestamp'))
+        """Obtiene las versiones del modelo ordenadas por fecha"""
+        try:
+            # Subconsulta para obtener el último timestamp por versión
+            subquery = db.session.query(
+                ModelMetrics.version,
+                func.max(ModelMetrics.timestamp).label('max_timestamp')
+            ).group_by(ModelMetrics.version).subquery()
+
+            # Consulta principal que incluye el timestamp para poder ordenar por él
+            versions = db.session.query(
+                ModelMetrics.version,
+                ModelMetrics.timestamp
+            ).join(
+                subquery,
+                and_(
+                    ModelMetrics.version == subquery.c.version,
+                    ModelMetrics.timestamp == subquery.c.max_timestamp
+                )
+            ).order_by(ModelMetrics.timestamp.desc()).all()
+
+            return [version[0] for version in versions]  # Retornamos solo las versiones
+        except Exception as e:
+            current_app.logger.error(f"Error al obtener versiones del modelo: {str(e)}")
+            return []
 
     def get_initial_metrics(self, version):
         """Obtiene las métricas iniciales para mostrar."""
         try:
-            # Obtener última métrica del modelo
-            model_metrics = ModelMetrics.objects.filter(
-                version=version
-            ).latest('timestamp')
+            # Obtener última métrica del modelo usando ORM
+            model_metrics = ModelMetrics.query\
+                .filter_by(version=version)\
+                .order_by(ModelMetrics.timestamp.desc())\
+                .first()
+            
+            if not model_metrics:
+                return {
+                    'metrics': {
+                        'accuracy': 0.0,
+                        'roc_auc': 0.0,
+                        'pr_auc': 0.0,
+                        'mean_confidence': 0.0,
+                        'confusion_matrix': [],
+                        'class_metrics': {},
+                        'roc_curve': {'fpr': [], 'tpr': []},
+                        'pr_curve': {'precision': [], 'recall': []}
+                    },
+                    'error_cases': []
+                }
             
             # Obtener predicciones recientes
             end_date = datetime.now()
             start_date = end_date - timedelta(days=7)
             
-            predictions = PredictionLog.objects.filter(
-                model_version=version,
-                timestamp__range=(start_date, end_date)
-            )
+            predictions = PredictionLog.query\
+                .filter(
+                    PredictionLog.model_version == version,
+                    PredictionLog.timestamp.between(start_date, end_date)
+                ).all()
             
-            # Obtener últimas métricas de drift
-            drift_metrics = DriftMetrics.objects.filter(
-                model_version=version
-            ).latest('timestamp')
+            # Preparar datos para métricas
+            y_true = [float(p.actual_value) for p in predictions if p.actual_value is not None]
+            y_pred = [float(p.predicted_value) for p in predictions if p.actual_value is not None]
+            y_prob = [float(p.confidence) for p in predictions if p.actual_value is not None]
+            
+            # Calcular métricas
+            metrics = self.calculate_model_metrics(y_true, y_pred, y_prob) if y_true else {
+                'accuracy': float(model_metrics.metrics.get('accuracy', 0.0)) if model_metrics.metrics else 0.0,
+                'roc_auc': float(model_metrics.roc_auc or 0.0),
+                'pr_auc': float(model_metrics.pr_auc or 0.0),
+                'mean_confidence': float(model_metrics.metrics.get('mean_confidence', 0.0)) if model_metrics.metrics else 0.0,
+                'confusion_matrix': model_metrics.confusion_matrix or [],
+                'class_metrics': model_metrics.class_metrics or {},
+                'roc_curve': {'fpr': [], 'tpr': []},
+                'pr_curve': {'precision': [], 'recall': []}
+            }
             
             return {
-                'metrics': model_metrics.metrics,
-                'drift': drift_metrics.to_dict() if drift_metrics else {},
+                'metrics': metrics,
                 'error_cases': self._get_error_cases(predictions)
             }
         except Exception as e:
             logger.error(f"Error al obtener métricas iniciales: {str(e)}")
-            return {'error': 'Error al obtener métricas iniciales'}
+            return {
+                'metrics': {
+                    'accuracy': 0.0,
+                    'roc_auc': 0.0,
+                    'pr_auc': 0.0,
+                    'mean_confidence': 0.0,
+                    'confusion_matrix': [],
+                    'class_metrics': {},
+                    'roc_curve': {'fpr': [], 'tpr': []},
+                    'pr_curve': {'precision': [], 'recall': []}
+                },
+                'error_cases': []
+            }
 
     def get_metrics_for_period(self, version, start_date, end_date):
         """Obtiene métricas para un período específico."""
         try:
-            # Obtener predicciones del período
-            predictions = PredictionLog.objects.filter(
-                model_version=version,
-                timestamp__range=(start_date, end_date)
-            )
+            # Obtener predicciones del período usando ORM
+            predictions = PredictionLog.query\
+                .filter(
+                    PredictionLog.model_version == version,
+                    PredictionLog.timestamp.between(start_date, end_date)
+                ).all()
+            
+            if not predictions:
+                return {'error': 'No hay datos suficientes para el período seleccionado'}
             
             # Preparar datos para métricas
-            y_true = [p.actual_value for p in predictions if p.actual_value is not None]
-            y_pred = [p.predicted_value for p in predictions if p.actual_value is not None]
-            y_prob = [p.confidence for p in predictions if p.actual_value is not None]
+            y_true = [float(p.actual_value) for p in predictions if p.actual_value is not None]
+            y_pred = [float(p.predicted_value) for p in predictions if p.actual_value is not None]
+            y_prob = [float(p.confidence) for p in predictions if p.actual_value is not None]
             
             if not y_true:
                 return {'error': 'No hay datos suficientes para el período seleccionado'}
@@ -74,18 +154,11 @@ class AIMetricsService:
             # Calcular métricas
             metrics = self.calculate_model_metrics(y_true, y_pred, y_prob)
             
-            # Analizar drift
-            drift = self.analyze_prediction_drift(
-                version=version,
-                window_days=(end_date - start_date).days
-            )
-            
             # Obtener casos con error
             error_cases = self._get_error_cases(predictions)
             
             return {
                 'metrics': metrics,
-                'drift': drift,
                 'error_cases': error_cases
             }
             
@@ -96,246 +169,64 @@ class AIMetricsService:
     def calculate_model_metrics(self, y_true, y_pred, y_prob):
         """Calcula métricas del modelo."""
         try:
-            metrics = {
-                'accuracy': np.mean(np.array(y_true) == np.array(y_pred)),
-                'roc_auc': roc_auc_score(y_true, y_prob),
-                'mean_confidence': np.mean(y_prob),
-                'confusion_matrix': confusion_matrix(y_true, y_pred).tolist()
-            }
+            # Calcular curva ROC
+            fpr, tpr, _ = roc_curve(y_true, y_prob)
+            roc_auc = float(auc(fpr, tpr))
             
             # Calcular curva PR
             precision, recall, _ = precision_recall_curve(y_true, y_prob)
-            metrics['pr_auc'] = auc(recall, precision)
+            pr_auc = float(auc(recall, precision))
+            
+            metrics = {
+                'accuracy': float(np.mean(np.array(y_true) == np.array(y_pred))),
+                'roc_auc': roc_auc,
+                'pr_auc': pr_auc,
+                'mean_confidence': float(np.mean(y_prob)),
+                'confusion_matrix': confusion_matrix(y_true, y_pred).tolist(),
+                'roc_curve': {
+                    'fpr': fpr.tolist(),
+                    'tpr': tpr.tolist()
+                },
+                'pr_curve': {
+                    'precision': precision.tolist(),
+                    'recall': recall.tolist()
+                }
+            }
             
             # Métricas por clase
             metrics['class_metrics'] = {
-                'precision': precision_score(y_true, y_pred, average=None).tolist(),
-                'recall': recall_score(y_true, y_pred, average=None).tolist(),
-                'f1': f1_score(y_true, y_pred, average=None).tolist()
+                'precision': [float(precision_score(y_true, y_pred, pos_label=i)) for i in [0, 1]],
+                'recall': [float(recall_score(y_true, y_pred, pos_label=i)) for i in [0, 1]],
+                'f1': [float(f1_score(y_true, y_pred, pos_label=i)) for i in [0, 1]]
             }
             
             return metrics
             
         except Exception as e:
             logger.error(f"Error al calcular métricas del modelo: {str(e)}")
-            return {'error': 'Error al calcular métricas del modelo'}
-
-    def analyze_prediction_drift(self, version, window_days):
-        """Analiza el drift en las predicciones."""
-        try:
-            # Obtener métricas de drift existentes
-            drift_metrics = DriftMetrics.objects.filter(
-                model_version=version,
-                analysis_window=window_days
-            ).latest('timestamp')
-            
-            if drift_metrics:
-                return drift_metrics.to_dict()
-            
-            # Si no hay métricas existentes, calcular nuevas
-            return self._calculate_new_drift_metrics(version, window_days)
-            
-        except Exception as e:
-            logger.error(f"Error al analizar drift: {str(e)}")
-            return {'error': 'Error al analizar drift'}
-
-    def _calculate_new_drift_metrics(self, version, window_days):
-        """Calcula nuevas métricas de drift."""
-        # Implementar cálculo de drift según necesidades específicas
-        return {
-            'distribution_shift': self._calculate_distribution_shift(version),
-            'feature_drift': self._calculate_feature_drift(version),
-            'performance_decay': self._calculate_performance_decay(version, window_days)
-        }
+            return {
+                'accuracy': 0.0,
+                'roc_auc': 0.0,
+                'pr_auc': 0.0,
+                'mean_confidence': 0.0,
+                'confusion_matrix': [],
+                'class_metrics': {},
+                'roc_curve': {'fpr': [], 'tpr': []},
+                'pr_curve': {'precision': [], 'recall': []}
+            }
 
     def _get_error_cases(self, predictions, limit=10):
-        """Obtiene los casos con mayor error."""
+        """Obtiene los casos con error más recientes."""
         error_cases = []
-        
         for pred in predictions:
-            if pred.actual_value is not None:
-                error = abs(pred.actual_value - pred.predicted_value)
+            if pred.actual_value is not None and pred.predicted_value != pred.actual_value:
                 error_cases.append({
-                    'id': pred.id,
-                    'predicted': pred.predicted_value,
-                    'actual': pred.actual_value,
-                    'confidence': pred.confidence,
-                    'error_margin': error
+                    'timestamp': pred.timestamp.isoformat(),
+                    'predicted': int(pred.predicted_value),
+                    'actual': int(pred.actual_value),
+                    'confidence': float(pred.confidence),
+                    'features': pred.features
                 })
-        
-        # Ordenar por error y tomar los top N
-        error_cases.sort(key=lambda x: x['error_margin'], reverse=True)
-        return error_cases[:limit]
-
-    def _calculate_distribution_shift(self, version):
-        """Calcula el cambio en la distribución de predicciones."""
-        try:
-            # Obtener predicciones del último período
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=30)
-            
-            predictions = PredictionLog.objects.filter(
-                model_version=version,
-                timestamp__range=(start_date, end_date)
-            ).order_by('timestamp')
-            
-            if not predictions:
-                return {}
-                
-            # Dividir en dos períodos
-            mid_point = len(predictions) // 2
-            period1 = predictions[:mid_point]
-            period2 = predictions[mid_point:]
-            
-            # Calcular distribuciones
-            dist1 = self._get_prediction_distribution(period1)
-            dist2 = self._get_prediction_distribution(period2)
-            
-            # Calcular KL divergence
-            kl_div = self._calculate_kl_divergence(dist1, dist2)
-            
-            return {
-                'kl_divergence': float(kl_div),
-                'distribution_period1': dist1,
-                'distribution_period2': dist2
-            }
-            
-        except Exception as e:
-            logger.error(f"Error al calcular distribution shift: {str(e)}")
-            return {}
-            
-    def _calculate_feature_drift(self, version):
-        """Calcula el drift en las características."""
-        try:
-            # Obtener predicciones con features
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=30)
-            
-            predictions = PredictionLog.objects.filter(
-                model_version=version,
-                timestamp__range=(start_date, end_date)
-            ).order_by('timestamp')
-            
-            if not predictions:
-                return {}
-                
-            # Extraer features y dividir en períodos
-            mid_point = len(predictions) // 2
-            period1 = predictions[:mid_point]
-            period2 = predictions[mid_point:]
-            
-            # Calcular estadísticas por feature
-            feature_stats = {}
-            if period1 and period2:
-                features = period1[0].features.keys()
-                for feature in features:
-                    values1 = [p.features[feature] for p in period1]
-                    values2 = [p.features[feature] for p in period2]
-                    
-                    mean1, std1 = np.mean(values1), np.std(values1)
-                    mean2, std2 = np.mean(values2), np.std(values2)
-                    
-                    # Calcular score de drift
-                    mean_change = abs(mean2 - mean1) / (abs(mean1) + 1e-10)
-                    std_change = abs(std2 - std1) / (abs(std1) + 1e-10)
-                    drift_score = mean_change + std_change
-                    
-                    feature_stats[feature] = {
-                        'drift_score': float(drift_score),
-                        'mean_change': float(mean_change),
-                        'std_change': float(std_change)
-                    }
-            
-            return feature_stats
-            
-        except Exception as e:
-            logger.error(f"Error al calcular feature drift: {str(e)}")
-            return {}
-
-    def _calculate_performance_decay(self, version, window_days):
-        """Calcula la degradación del rendimiento."""
-        try:
-            # Obtener predicciones del período
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=window_days)
-            
-            predictions = PredictionLog.objects.filter(
-                model_version=version,
-                timestamp__range=(start_date, end_date)
-            ).order_by('timestamp')
-            
-            if not predictions:
-                return {}
-                
-            # Dividir en ventanas temporales
-            window_size = max(len(predictions) // 4, 1)
-            windows = [predictions[i:i+window_size] 
-                      for i in range(0, len(predictions), window_size)]
-            
-            # Calcular métricas por ventana
-            window_metrics = []
-            for i, window in enumerate(windows):
-                if not window:
-                    continue
-                    
-                y_true = [p.actual_value for p in window if p.actual_value is not None]
-                y_pred = [p.predicted_value for p in window if p.actual_value is not None]
-                
-                if not y_true:
-                    continue
-                
-                accuracy = np.mean(np.array(y_true) == np.array(y_pred))
-                confidence = np.mean([p.confidence for p in window])
-                
-                window_metrics.append({
-                    'window': i,
-                    'start_date': window[0].timestamp.isoformat(),
-                    'end_date': window[-1].timestamp.isoformat(),
-                    'accuracy': float(accuracy),
-                    'mean_confidence': float(confidence),
-                    'sample_size': len(window)
-                })
-            
-            # Calcular tendencia
-            if len(window_metrics) >= 2:
-                accuracies = [w['accuracy'] for w in window_metrics]
-                slope = np.polyfit(range(len(accuracies)), accuracies, 1)[0]
-            else:
-                slope = 0.0
-            
-            return {
-                'window_metrics': window_metrics,
-                'decay_rate': float(slope)
-            }
-            
-        except Exception as e:
-            logger.error(f"Error al calcular performance decay: {str(e)}")
-            return {}
-            
-    def _get_prediction_distribution(self, predictions):
-        """Calcula la distribución de predicciones."""
-        if not predictions:
-            return {}
-            
-        values = [p.predicted_value for p in predictions]
-        unique, counts = np.unique(values, return_counts=True)
-        return dict(zip(unique.tolist(), (counts/len(values)).tolist()))
-        
-    def _calculate_kl_divergence(self, dist1, dist2):
-        """Calcula la divergencia KL entre dos distribuciones."""
-        if not dist1 or not dist2:
-            return 0.0
-            
-        # Asegurar que ambas distribuciones tengan las mismas clases
-        all_classes = set(dist1.keys()) | set(dist2.keys())
-        
-        # Añadir suavizado para evitar divisiones por cero
-        epsilon = 1e-10
-        
-        kl_div = 0
-        for c in all_classes:
-            p = dist1.get(c, epsilon)
-            q = dist2.get(c, epsilon)
-            kl_div += p * np.log(p/q)
-        
-        return kl_div 
+                if len(error_cases) >= limit:
+                    break
+        return error_cases 

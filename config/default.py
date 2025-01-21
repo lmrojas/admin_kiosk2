@@ -12,6 +12,12 @@ class Config:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-highly-secret'
     
+    # Configuración de sesión
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    
     # Configuración de base de datos PostgreSQL
     DB_USER = os.environ.get('DB_USER', 'postgres')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'postgres')
@@ -33,9 +39,6 @@ class Config:
     SESSION_TYPE = 'redis'
     SESSION_REDIS = None  # Se configura en la aplicación
     SESSION_COOKIE_NAME = 'kiosk_session'
-    SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_REFRESH_EACH_REQUEST = True
     
     # Configuración JWT

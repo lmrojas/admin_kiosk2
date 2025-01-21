@@ -1,4 +1,10 @@
-A continuación, se presenta una versión **todavía más completa** de la Guía Definitiva de Desarrollo para un **Sistema de Kiosks Inteligentes** con Flask + IA, **incluyendo** un **ciclo de entrenamiento automático** que fusione tanto datos **reales** como datos **sintéticos** (simulados), con la posibilidad de reentrenar el modelo de IA de manera **periódica** o **en base a eventos**. De esta forma, el sistema **aprende** y se **actualiza** sin intervención manual constante.
+A continuación se presenta la **versión final y actualizada** de la Guía Definitiva de Desarrollo para un **Sistema de Kiosks Inteligentes** con Flask + IA, **aclarando expresamente** que:
+
+1. La **lógica de testing** o simulación de kiosks (alta, comportamientos, estados, etc.) se realiza **en un microservicio/app aparte**, **por fuera** del sistema principal.  
+2. El **sistema en sí** (admin_kiosk) únicamente **recibe** datos (vía WebSockets/API) y responde a los kiosks reales o simulados (ej.: reiniciar, bloquear…).  
+3. **No hay simulación interna** en Flask: todos los “datos simulados” llegan como si fueran reales.
+
+> **Nota**: Este documento **reemplaza** versiones anteriores de la guía, enfatizando la existencia de una **Kiosk App separada** para simular o testear comportamientos (en paralelo) mientras el sistema Flask + IA se mantiene ligero, seguro y enfocado en la lógica real.
 
 ---
 
@@ -7,21 +13,20 @@ A continuación, se presenta una versión **todavía más completa** de la Guía
 ## 0. Preámbulo: Objetivo y Filosofía
 
 ### 0.1 Objetivo Principal
-Crear un sistema de kiosks que sea:
-- 🚀 **Altamente escalable**  
-- 🔒 **Seguro**  
-- 🧠 **Inteligente** (soportado por IA)  
-- 💰 **Eficiente en costos**  
-- 👥 **Mínima intervención humana** (incluyendo la opción de **reentrenar** la IA automáticamente)
+Crear un **sistema** que:
+- **Escale** con facilidad (altamente escalable).  
+- **Garantice la seguridad** (datos y autenticación).  
+- **Aproveche IA** para análisis de anomalías, alertas, etc.  
+- **Minimice la intervención humana**, incluso para reentrenar el modelo IA.  
+- **Separe** la simulación/log de pruebas (kiosks) del sistema productivo.
 
 ### 0.2 Principios Fundamentales
-- **Patrón de Arquitectura**: MVT (Model-View-Template) + Services  
-- **Separación estricta** de responsabilidades  
-- **Código modular** y mantenible  
-- **Desarrollo guiado** por buenas prácticas (testing, CI/CD, IA explicable, etc.)  
-- **Regla de oro**: Todo cambio en el proyecto **debe** acatar las normas de `@cura.md` (o `cursor_ai_rules.md`) y consultar `project_custom_structure.txt` antes de modificarse la estructura o introducir nuevos archivos.
+- **Arquitectura**: MVT (Model-View-Template) + Services.  
+- **Separación estricta** de responsabilidades (módulos, servicios).  
+- **Buenas prácticas** (CI/CD, testing, MLOps, etc.).  
+- **Cambios** solo bajo las normas de `@cura.md`, actualizando `project_custom_structure.txt`.
 
-> **Nuevo Énfasis**: **Automatizar** el ciclo de vida del modelo de IA, combinando **datos reales** y **sintéticos** para reentrenar periódicamente y mantener un sistema de kiosks **en constante aprendizaje**.
+> **Nuevo Énfasis**: **Automatizar** el entrenamiento IA mezclando datos reales y sintéticos, **sin** mezclar lógica de test (simulación kiosk) en la app Flask.
 
 ---
 
@@ -30,54 +35,54 @@ Crear un sistema de kiosks que sea:
 ```
 admin_kiosk/
 │
-├── app/                    
-│   ├── __init__.py         
-│   ├── models/             
+├── app/
+│   ├── __init__.py
+│   ├── models/
 │   │   ├── __init__.py
-│   │   └── user.py         
-│   ├── services/           
+│   │   └── user.py
+│   ├── services/
 │   │   ├── __init__.py
-│   │   ├── auth_service.py      
-│   │   ├── kiosk_ai_service.py  
-│   │   ├── kiosk_service.py     
+│   │   ├── auth_service.py
+│   │   ├── kiosk_ai_service.py
+│   │   ├── kiosk_service.py
 │   │   └── ...
-│   ├── blueprints/         
+│   ├── blueprints/
 │   │   ├── __init__.py
-│   │   ├── auth.py         
-│   │   └── kiosk.py        
-│   ├── templates/          
+│   │   ├── auth.py
+│   │   └── kiosk.py
+│   ├── templates/
 │   │   ├── base.html
 │   │   └── login.html
-│   └── utils/              
+│   └── utils/
 │       └── __init__.py
 │
-├── config/                 
+├── config/
 │   └── default.py
 │
-├── scripts/                
-│   ├── export_structure.py       # Genera/actualiza project_custom_structure.txt
-│   ├── train_ai_model.py         # Entrena el modelo de IA (manual o programado)
-│   ├── generate_synthetic_data.py# Genera datos sintéticos de kiosks
-│   └── auto_retrain_pipeline.py  # Ejecución automática de reentrenamiento
+├── scripts/
+│   ├── export_structure.py        # Exporta project_custom_structure.txt
+│   ├── train_ai_model.py          # Entrena el modelo IA (manual/auto)
+│   ├── generate_synthetic_data.py # Genera datos sintéticos
+│   ├── auto_retrain_pipeline.py   # Pipeline de reentrenamiento (cron, etc.)
+│   └── ... (scripts externos para pruebas)
 │
-├── tests/                  
+├── tests/
 │   ├── unit/
 │   └── integration/
 │
-├── migrations/             
+├── migrations/
 │
-├── requirements.txt        
-├── run.py                  
-├── README.md               
-└── project_custom_structure.txt  
+├── requirements.txt
+├── run.py
+├── README.md
+└── project_custom_structure.txt
 ```
 
-### 1.1 Regla Fundamental: Comentario Obligatorio
-
-En **CADA** archivo del proyecto, la **primera línea** será:
+### 1.1 Comentario Obligatorio
+En **todos** los archivos principales:
 ```python
-# EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
-# SOLAMENTE SIGUIENDO LO ESTABLECIDO EN @cura.md
+# EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE 
+# SIGUIENDO LO ESTABLECIDO EN @cura.md
 ```
 
 ---
@@ -87,18 +92,13 @@ En **CADA** archivo del proyecto, la **primera línea** será:
 ### 2.1 Requisitos Previos
 - **Python 3.9+**  
 - `pip`  
-- `virtualenv` (o `venv`)  
+- `virtualenv / venv`
 
 ### 2.2 Crear Entorno Virtual
-
 ```bash
-# Windows
 python -m venv venv
-.\venv\Scripts\activate
-
-# Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/Mac
+# Windows: .\venv\Scripts\activate
 ```
 
 ### 2.3 Instalación de Dependencias
@@ -106,9 +106,8 @@ source venv/bin/activate
 pip install flask flask-sqlalchemy flask-login flask-migrate torch
 pip freeze > requirements.txt
 ```
-> Mantén tu `venv` activo para evitar conflictos con el sistema global.
 
-### 2.4 Versiones Específicas Recomendadas
+### 2.4 Versiones Sugeridas
 ```
 Flask==2.1.0
 Flask-SQLAlchemy==2.5.1
@@ -116,14 +115,10 @@ Flask-Login==0.5.0
 Flask-Migrate==3.1.0
 torch==1.9.0
 ```
-### 2.5 Actualización de Dependencias
-```bash
-pip freeze > requirements.txt
-```
 
 ---
 
-## 3. Inicialización de la Aplicación Flask
+## 3. Inicialización de la App Flask
 
 ### 3.1 `app/__init__.py`
 ```python
@@ -144,10 +139,10 @@ def create_app(config_object='config.default.Config'):
     db.init_app(app)
     login_manager.init_app(app)
 
+    # Registro de blueprints
     from .blueprints.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
-
-    # Opcional: registro de otros blueprints (kiosk, dashboard, etc.)
+    # Otros blueprints, p.ej. kiosk
 
     return app
 ```
@@ -176,7 +171,7 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 ```
-> Añade más modelos (Kiosk, SensorData, etc.) según tus necesidades.
+> Añade más modelos (Kiosk, Logs, etc.) según sea necesario.
 
 ---
 
@@ -207,7 +202,7 @@ class AuthService:
         return None
 ```
 
-### 5.2 `app/services/kiosk_ai_service.py` (Integración IA)
+### 5.2 `app/services/kiosk_ai_service.py` (IA)
 ```python
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE 
 # SIGUIENDO LO ESTABLECIDO EN @cura.md
@@ -215,7 +210,7 @@ class AuthService:
 import torch
 
 class KioskAIService:
-    """Servicio de IA para detección de anomalías en kiosks."""
+    """Servicio IA para detección de anomalías en kiosks."""
 
     def __init__(self, model_path=None):
         self.model = self._load_model(model_path)
@@ -227,14 +222,14 @@ class KioskAIService:
                 model.eval()
                 return model
             except Exception as e:
-                print(f"[ERROR] No se pudo cargar el modelo IA: {e}")
+                print(f"[ERROR] Carga de modelo IA fallida: {e}")
                 return None
         return None
 
     def predict_anomaly(self, kiosk_data):
         """
-        kiosk_data: dict con métricas (cpu_usage, memory_usage, network_latency).
-        Retorna un valor float con la probabilidad de anomalía.
+        kiosk_data: dict con (cpu_usage, memory_usage, network_latency).
+        Retorna prob. anomalía (float).
         """
         if not self.model:
             return 0.0
@@ -251,10 +246,7 @@ class KioskAIService:
 ```
 
 ### 5.3 `app/services/kiosk_service.py`
-Podría manejar:
-- Estados de kiosks (online/offline)
-- Métricas periódicas
-- Interacción con DB (registro histórico)
+- Manejar aquí la lógica que relaciona Kiosk con DB, logs, alertas…
 
 ---
 
@@ -279,7 +271,7 @@ def login():
         user = AuthService.authenticate(username, password)
         if user:
             login_user(user)
-            return redirect(url_for('main.index'))  # Ajusta la ruta a tu blueprint principal
+            return redirect(url_for('main.index'))  # Ajusta tu blueprint principal
     return render_template('login.html')
 
 @auth_bp.route('/logout')
@@ -302,14 +294,14 @@ import os
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'desarrollo-secreto')
-    
-    # Configuración base de datos PostgreSQL
+
+    # Base de datos (PostgreSQL por defecto)
     DB_USER = os.environ.get('DB_USER', 'postgres')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'postgres')
     DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'admin_kiosk2')
-    
+
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -346,13 +338,15 @@ flask db upgrade
 
 ---
 
-## 10. Testing
+## 10. Testing (SIN Simulación Interna)
 
-### 10.1 `tests/test_auth_service.py`
+**Relevante**:  
+- No existe un “motor de simulación” para kiosks dentro de Flask.  
+- Tests de “kiosk behaviors” se hacen externamente, enviando datos vía WebSockets o API.  
+- Aquí, solo tests unitarios/integración del core.
+
 ```python
-# EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE 
-# SIGUIENDO LO ESTABLECIDO EN @cura.md
-
+# tests/test_auth_service.py
 import pytest
 from app import create_app, db
 from app.services.auth_service import AuthService
@@ -373,9 +367,9 @@ def test_user_registration(app):
 
 ---
 
-## 11. Entrenamiento de IA: Datos Reales + Sintéticos
+## 11. Entrenamiento de IA (Reales + Sintéticos)
 
-### 11.1 Script de Entrenamiento Manual: `scripts/train_ai_model.py`
+### 11.1 `scripts/train_ai_model.py`
 ```python
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE 
 # SIGUIENDO LO ESTABLECIDO EN @cura.md
@@ -402,11 +396,10 @@ def train_model(real_data_path=None, output_model='models/kiosk_anomaly_model.pt
     # Carga de datos REALES (si existen)
     data_real = pd.DataFrame()
     if real_data_path:
-        data_real = pd.read_csv(real_data_path)  # CSV con cpu_usage, memory_usage, network_latency, label
+        data_real = pd.read_csv(real_data_path)
 
     # Generar DATOS SINTÉTICOS
-    data_synthetic = generate_synthetic_kiosk_data(num_samples=500)  
-    # Retorna un DataFrame con: cpu_usage, memory_usage, network_latency, label (0 o 1)
+    data_synthetic = generate_synthetic_kiosk_data(num_samples=500)
 
     # Combinar ambos
     combined_data = pd.concat([data_real, data_synthetic], ignore_index=True)
@@ -429,10 +422,7 @@ def train_model(real_data_path=None, output_model='models/kiosk_anomaly_model.pt
     print(f"Modelo guardado en {output_model}")
 
 if __name__ == "__main__":
-    # Ejemplo de ejecución:
-    # python scripts/train_ai_model.py --real_data_path data/real_kiosks.csv
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--real_data_path', type=str, default=None)
     parser.add_argument('--output_model', type=str, default='models/kiosk_anomaly_model.pth')
@@ -441,9 +431,7 @@ if __name__ == "__main__":
     train_model(real_data_path=args.real_data_path, output_model=args.output_model)
 ```
 
-> Este script **combina** datos reales (si existen) con **datos sintéticos** generados al vuelo, entrenando un modelo y guardándolo. Puede ejecutarse **manualmente** o **ser llamado** por un pipeline automático.
-
-### 11.2 Generación de Datos Sintéticos: `scripts/generate_synthetic_data.py`
+### 11.2 `scripts/generate_synthetic_data.py`
 ```python
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE 
 # SIGUIENDO LO ESTABLECIDO EN @cura.md
@@ -453,7 +441,7 @@ import random
 
 def generate_synthetic_kiosk_data(num_samples=500):
     """
-    Crea un DataFrame con columnas: cpu_usage, memory_usage, network_latency, label
+    Crea un DataFrame con: cpu_usage, memory_usage, network_latency, label
     label: 0 => normal, 1 => anomalía
     """
     data = {
@@ -466,8 +454,7 @@ def generate_synthetic_kiosk_data(num_samples=500):
         cpu = random.uniform(0, 100)
         mem = random.uniform(0, 100)
         net = random.uniform(10, 300)
-        # Heurística simple para etiquetar anomalías
-        anomaly = 1 if (cpu > 90.0 or mem > 90.0 or net > 250) else 0
+        anomaly = 1 if (cpu > 90 or mem > 90 or net > 250) else 0
 
         data['cpu_usage'].append(cpu)
         data['memory_usage'].append(mem)
@@ -479,32 +466,22 @@ def generate_synthetic_kiosk_data(num_samples=500):
 
 ---
 
-## 12. **Entrenamiento Automático** (Opcional, Recomendado)
+## 12. Pipeline de Reentrenamiento Automático
 
-Para automatizar, podemos tener un **script** o **job** que corra periódicamente (vía cron, Celery, Airflow, etc.) y que:
-
-1. Descargue / Recopile los datos **reales** del sistema (si existen).  
-2. **Llame** a `generate_synthetic_kiosk_data()` para crear datos de refuerzo.  
-3. **Ejecute** `train_model()` con ambos datasets combinados.  
-4. **Reemplace** el modelo en `models/kiosk_anomaly_model.pth` si la **nueva versión** supera ciertos umbrales de calidad.
-
-### 12.1 Ejemplo: `scripts/auto_retrain_pipeline.py`
+### 12.1 `scripts/auto_retrain_pipeline.py`
 ```python
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE 
 # SIGUIENDO LO ESTABLECIDO EN @cura.md
 
 import os
 import subprocess
-import datetime
 
 def auto_retrain(real_data_path=None, output_model='models/kiosk_anomaly_model.pth'):
     """
-    Script que ejecuta el pipeline completo:
-    1) Llama a train_ai_model.py con real_data_path + datos sintéticos
-    2) (Opcional) Valida la performance (comparar nuevo modelo vs. viejo)
-    3) Actualiza modelo en producción si está bien
+    1) Llama a train_ai_model.py
+    2) (Opcional) valida performance
+    3) Actualiza modelo si pasa umbrales
     """
-    # 1) Ejecutar script de entrenamiento
     cmd = [
         'python', 'scripts/train_ai_model.py',
         f'--output_model={output_model}'
@@ -514,102 +491,90 @@ def auto_retrain(real_data_path=None, output_model='models/kiosk_anomaly_model.p
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print("[ERROR] Entrenamiento fallido. Logs:")
+        print("[ERROR] Entrenamiento fallido.")
         print(result.stdout)
         print(result.stderr)
         return
 
-    # 2) (Opcional) Se podría hacer una validación extra aquí
-    print(f"[INFO] Entrenamiento finalizado. Modelo actualizado: {output_model}")
+    print(f"[INFO] Entrenamiento finalizado. Modelo en {output_model}")
 
 if __name__ == "__main__":
-    # Podrías usar un job de cron/celery/airflow para llamar este script
-    # Ejemplo: 0 3 * * * /usr/bin/python scripts/auto_retrain_pipeline.py
     auto_retrain(real_data_path='data/real_kiosks.csv')
 ```
-
-> Con esto, tu sistema de kiosks puede tener un **pipeline** de reentrenamiento automático, combinando datos **reales** y **sintéticos**.
 
 ---
 
 ## 13. Manejo de Credenciales y Entornos
 
-1. **Variables de Entorno**: `SECRET_KEY`, `DATABASE_URL`, etc.  
-2. **Evitar** subir contraseñas/llaves.  
-3. **Backups** antes de grandes cambios en la DB.  
-4. **@cura.md**: Revisa reglas antes de modificar algo sensible.
+- Usar **variables de entorno** para `SECRET_KEY`, `DATABASE_URL`, etc.  
+- No subir contraseñas en texto plano a repos.  
+- Revisar `@cura.md` ante cambios sensibles.
 
 ---
 
-## 14. Acceso al Servidor
+## 14. Despliegue
 
-- Para **desarrollo local**: `python run.py`.  
-- Para **producción**: WSGI + Nginx, Docker, Kubernetes, etc.
+- **Desarrollo**: `python run.py` (Flask).  
+- **Producción**: Gunicorn/WSGI + Nginx, Docker, K8s, etc.
 
 ---
 
-## 15. Configuración del Repositorio en Git
+## 15. Git y Control de Versiones
 
-1. `git init && git remote add origin ...`  
-2. Crea ramas `feature/xxx`.  
-3. Commits claros (`feat:`, `fix:`).  
-4. Push tras pasar `pytest` y leer `@cura.md`.
+- `git init && git remote add origin ...`  
+- Ramas `feature/...`, commits con mensajes claros.  
+- Revisar `@cura.md` antes de merges.
 
 ---
 
 ## 16. Scripts de Estructura y Documentación
 
-- `scripts/export_structure.py`: actualiza `project_custom_structure.txt`.
-- **Obligatorio** tras crear/borrar archivos.
+- `scripts/export_structure.py`: actualiza `project_custom_structure.txt` con la estructura final.
 
 ---
 
-## 17. Comunicación en Tiempo Real (Opcional)
+## 17. Comunicación en Tiempo Real
 
-- Flask-SocketIO para recibir métricas en vivo.  
-- Notificar anomalías a un dashboard.
-
----
-
-## 18. Próximos Pasos y Microservicios
-
-1. **Autorización** (roles, permisos).  
-2. **Optimizar** el modelo IA (hiperparámetros, data augmentation).  
-3. **Despliegue** en contenedores (Docker) y orquestación (Kubernetes).  
-4. **Logs centralizados** (Grafana, Kibana).  
-5. **Geolocalización** si manejas ubicaciones de kiosks.
+- Flask-SocketIO (u otro) para recibir métricas en vivo.  
+- **Los kiosks** (reales o simulados) **conectan** a `admin_kiosk` y **emiten** sus datos.  
+- **admin_kiosk** solo **escucha** y responde (por ejemplo, enviando comandos como “reiniciar kiosk”).
 
 ---
 
-## 19. Consideraciones Finales
+## 18. Próximos Pasos
 
-- **MVT + Services**: No mezclar lógica de negocio en modelos/vistas.  
-- **`@cura.md`**: Dicta las reglas de edición, testing, backups, versionado.  
-- **`project_custom_structure.txt`**: actualiza tras cada cambio importante.  
-- **IA**: Entrenamiento **automático** gracias a scripts (real + sintético).  
-- **Seguridad**: variables de entorno, backups, logs, Docker, CI/CD.
-
-> **Nota**: La innovación es un **viaje continuo** de aprendizaje y mejora. Ahora, con un **pipeline automático** de reentrenamiento IA (que fusiona datos reales y simulados), tu **Sistema de Kiosks Inteligentes** mantendrá su **precisión** y **robustez** de forma casi desatendida.  
+- Roles/permisos.  
+- Optimizar IA.  
+- Docker/Kubernetes.  
+- Logs centralizados (Grafana/ELK).  
+- **Geolocalización** + dashboards.
 
 ---
 
-## 20. Apéndice: Manejo de Cambios en BD y Backups
+## 19. Manejo de Cambios en BD y Backups
 
-1. **Planifica** grandes cambios (nuevas columnas, alter table).  
-2. **Backup** (pg_dump en PostgreSQL u otro).  
-3. **Migraciones** (`flask db migrate`, `flask db upgrade`).  
-4. **Validar** con `pytest`.  
-5. **Actualizar** `project_custom_structure.txt`.
+1. Planear migraciones, backups.  
+2. `flask db migrate && flask db upgrade`.  
+3. Test con `pytest`.  
+4. Actualizar `project_custom_structure.txt`.
+
+---
+
+## 20. **Aclaración sobre el Testing de Kiosks**
+
+- **Simulaciones** (kiosk offline, alta temperatura, etc.) se hacen en un **microservicio/app aparte**.  
+- **admin_kiosk** solo recibe los datos por WebSocket/API.  
+- Sin motor interno de simulación => la lógica de test está “fuera” de la aplicación Flask.
 
 ---
 
 ## 21. Resumen y Conclusión
 
-- **Objetivo**: Un proyecto Flask MVT + Services, con IA (PyTorch), con un **proceso de entrenamiento automático** que usa **datos reales** + **datos sintéticos**.  
-- **Scripts clave**:  
-  - `train_ai_model.py`: entrena el modelo manual o automatizado.  
-  - `generate_synthetic_data.py`: produce datos sintéticos.  
-  - `auto_retrain_pipeline.py`: pipeline automático (cron/Airflow/Celery).  
-- **Futuro**: CI/CD de IA (MLOps), contenedores, orquestación, dashboards en tiempo real.  
+- **Objetivo**: Un Flask MVT + Services con IA, que mezcla datos reales y sintéticos para entrenar su modelo, **sin** mezclar la simulación de kiosks en la app.  
+- **Scripts**:  
+  - `train_ai_model.py` (entrena IA).  
+  - `generate_synthetic_data.py` (crea datos sintéticos).  
+  - `auto_retrain_pipeline.py` (pipeline automático).  
+  - *Kiosk-simulator apps* (externas) que envían datos al sistema.  
+- **Resultado**: Una plataforma que recibe “datos reales” (aunque simulados externamente), registra estados y alertas, e integra un proceso MLOps (reentrenamiento) independiente.  
 
-Con esta **Guía Definitiva**, tendrás un **Sistema de Kiosks Inteligentes** que aprende y **se entrena por sí solo** conforme llegan más datos. Disfruta de la **automatización**, la **seguridad** y la **eficiencia** que brinda este enfoque. ¡A seguir innovando!

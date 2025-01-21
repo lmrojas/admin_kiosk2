@@ -36,6 +36,24 @@ def dashboard():
         recent_kiosks=recent_kiosks
     )
 
+@main_bp.route('/dashboard/logs')
+@login_required
+def logs():
+    """Vista de logs del sistema"""
+    return render_template('main/logs.html')
+
+@main_bp.route('/dashboard/security')
+@login_required
+def security():
+    """Vista de seguridad del sistema"""
+    return render_template('main/security.html')
+
+@main_bp.route('/dashboard/backups')
+@login_required
+def backups():
+    """Vista de backups del sistema"""
+    return render_template('main/backups.html')
+
 @main_bp.route('/profile')
 @login_required
 def profile():

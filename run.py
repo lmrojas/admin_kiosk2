@@ -1,11 +1,12 @@
 """
 Script principal para ejecutar la aplicación Flask.
 Configura el servidor eventlet para WebSocket y ejecuta la aplicación.
+Este código solo puede ser modificado siguiendo lo establecido en 'cura.md' y 'project_custom_structure.txt'
 """
 
 # Monkey patch debe ser lo primero
 import eventlet
-eventlet.monkey_patch()  # Debe ejecutarse antes de importar otros módulos
+eventlet.monkey_patch(socket=True, select=True, thread=True)
 
 # Importaciones después del monkey patch
 import os
@@ -22,12 +23,18 @@ def init_app():
             db.create_all()
             app.logger.info("Base de datos inicializada correctamente")
             
-            # Inicializar otros servicios que requieran contexto
+            # Inicializar servicios
             from app.services.kiosk_ai_service import KioskAIService
-            KioskAIService()  # Inicializar el servicio de IA
+            from app.services.ai_metrics import AIMetricsService
+            
+            # Inicializar servicios (usando patrón Singleton)
+            app.ai_service = KioskAIService()
+            app.metrics_service = AIMetricsService()
+            
+            app.logger.info("Servicios inicializados correctamente")
             
     except Exception as e:
-        app.logger.error(f"Error al inicializar la base de datos: {str(e)}")
+        app.logger.error(f"Error al inicializar la aplicación: {str(e)}")
         raise
 
 if __name__ == '__main__':
@@ -40,9 +47,8 @@ if __name__ == '__main__':
             app,
             host='0.0.0.0',
             port=int(os.getenv('PORT', 5000)),
-            debug=False,  # Desactivar debug para producción
-            use_reloader=False,  # Evitar problemas con eventlet
-            log_output=True  # Habilitar logging
+            debug=True,  # Activar debug para desarrollo
+            use_reloader=False  # Evitar problemas con eventlet
         )
     except Exception as e:
         app.logger.error(f"Error al iniciar el servidor: {str(e)}")

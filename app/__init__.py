@@ -11,6 +11,7 @@ from config.default import config
 from config.logging_config import LoggingConfig
 import logging
 
+# Inicializar extensiones
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -19,18 +20,30 @@ login_manager.login_message_category = 'info'
 socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet')
 csrf = CSRFProtect()
 
+# Configurar user_loader
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        from .models.user import User
+        return User.query.get(int(user_id))
+    except Exception as e:
+        logging.error(f'Error loading user: {str(e)}')
+        return None
+
 def create_app(config_name='development'):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     
-    # Inicializar extensiones
-    db.init_app(app)
-    migrate.init_app(app, db)
+    # Configurar CSRF primero
     csrf.init_app(app)
     
     # Configurar logging
     LoggingConfig.configure_logging(app)
     logger = logging.getLogger(__name__)
+    
+    # Inicializar otras extensiones
+    db.init_app(app)
+    migrate.init_app(app, db)
     
     # Importar modelos
     from .models.user import User
@@ -39,7 +52,10 @@ def create_app(config_name='development'):
     
     # Importar e inicializar servicios
     from .services.auth_service import AuthService
+    from .services.ai_metrics import AIMetricsService
+    
     auth_service = AuthService()
+    metrics_service = AIMetricsService()
     
     # Inicializar login después del servicio de auth
     login_manager.init_app(app)

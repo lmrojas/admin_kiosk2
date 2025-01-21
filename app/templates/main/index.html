@@ -15,12 +15,17 @@
                     <div class="card-body">
                         <h2 class="card-title">Hola, {{ current_user.username }}!</h2>
                         <p class="card-text">Estás conectado al sistema de administración de kiosks.</p>
-                        <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-primary">
-                            <i class="fas fa-list"></i> Ver Mis Kiosks
-                        </a>
-                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
-                            <i class="fas fa-tachometer-alt"></i> Ir al Dashboard
-                        </a>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-primary">
+                                <i class="fas fa-list"></i> Ver Mis Kiosks
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard Principal
+                            </a>
+                            <a href="{{ url_for('ai.dashboard') }}" class="btn btn-info">
+                                <i class="fas fa-brain"></i> Dashboard IA
+                            </a>
+                        </div>
                     </div>
                 </div>
             {% else %}

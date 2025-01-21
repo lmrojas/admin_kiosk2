@@ -6,6 +6,11 @@ import torch.nn as nn
 import numpy as np
 from typing import Dict, Union
 import logging
+from datetime import datetime
+import time
+from flask import current_app
+from app import socketio, db
+from app.models.ai import PredictionLog
 
 class SimpleAnomalyDetector(nn.Module):
     """
@@ -26,117 +31,103 @@ class SimpleAnomalyDetector(nn.Module):
         return self.layers(x)
 
 class KioskAIService:
-    """
-    Servicio de IA para predicción de anomalías en kiosks.
-    Sigue el patrón de Services, separando la lógica de negocio.
-    """
-
-    def __init__(self, model_path='models/kiosk_anomaly_model.pth'):
-        """
-        Inicializa el servicio de IA cargando un modelo pre-entrenado.
-        
-        Args:
-            model_path (str): Ruta al modelo de IA pre-entrenado
-        """
-        self.model = self._load_model(model_path)
-
-    def _load_model(self, path):
-        """
-        Carga un modelo de IA desde un archivo.
-        
-        Args:
-            path (str): Ruta al archivo del modelo
-        
-        Returns:
-            torch.nn.Module: Modelo de IA cargado
-        """
+    """Servicio para gestionar el modelo de IA de los kiosks."""
+    
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(KioskAIService, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if not self._initialized:
+            self.model = None
+            self._initialized = True
+            self._load_model()
+            
+    def _load_model(self):
+        """Carga o inicializa el modelo."""
         try:
-            # Crear modelo base
-            model = SimpleAnomalyDetector()
+            # TODO: Implementar carga desde archivo
+            self.model = SimpleAnomalyDetector()
+            logging.info("Modelo de IA inicializado correctamente")
+        except Exception as e:
+            logging.error(f"Error al cargar modelo: {str(e)}")
+            self.model = SimpleAnomalyDetector()  # Fallback a modelo nuevo
+    
+    def _save_prediction(self, prediction: Dict) -> None:
+        """Guarda una predicción en la base de datos."""
+        try:
+            with current_app.app_context():
+                pred_log = PredictionLog(
+                    timestamp=prediction['timestamp'],
+                    model_version=prediction.get('model_version', 'v1.0.0'),
+                    features=prediction['features'],
+                    predicted_value=prediction['predicted_value'],
+                    actual_value=prediction.get('actual_value'),
+                    confidence=prediction['confidence'],
+                    prediction_time=prediction['prediction_time']
+                )
+                db.session.add(pred_log)
+                db.session.commit()
+        except Exception as e:
+            logging.error(f"Error al guardar predicción: {str(e)}")
+            if 'db' in locals():
+                db.session.rollback()
+
+    def predict_anomaly(self, kiosk_data: Dict[str, Union[float, int]]) -> Dict:
+        """Predice anomalías basado en datos recibidos de una kiosk."""
+        try:
+            # Validar y normalizar datos
+            features = [
+                kiosk_data.get('cpu_usage', 0.0) / 100.0,
+                kiosk_data.get('memory_usage', 0.0) / 100.0,
+                min(kiosk_data.get('network_latency', 0.0) / 300.0, 1.0)
+            ]
             
-            # Cargar estado del modelo
-            try:
-                # Cargar state_dict con weights_only=True
-                state_dict = torch.load(path, map_location=torch.device('cpu'), weights_only=True)
-                model.load_state_dict(state_dict)
-                logging.info(f"Modelo cargado exitosamente desde {path}")
-            except FileNotFoundError:
-                logging.warning(f"[WARN] Modelo no encontrado en {path}. Usando modelo por defecto.")
-            except Exception as e:
-                logging.error(f"[ERROR] No se pudo cargar el modelo: {e}")
+            # Convertir a tensor y predecir
+            input_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
+            start_time = time.time()
             
-            model.eval()  # Modo de evaluación
-            return model
+            with torch.no_grad():
+                anomaly_prob = self.model(input_tensor).item()
+            
+            # Calcular tiempo de predicción
+            prediction_time = time.time() - start_time
+            
+            # Determinar si es anomalía
+            is_anomaly = anomaly_prob > 0.7
+            
+            # Crear registro de predicción
+            prediction = {
+                'timestamp': datetime.now(),
+                'kiosk_id': kiosk_data.get('kiosk_id'),
+                'features': {
+                    'cpu_usage': kiosk_data.get('cpu_usage'),
+                    'memory_usage': kiosk_data.get('memory_usage'),
+                    'network_latency': kiosk_data.get('network_latency')
+                },
+                'predicted_value': int(is_anomaly),
+                'confidence': anomaly_prob,
+                'prediction_time': prediction_time
+            }
+            
+            # Guardar predicción
+            self._save_prediction(prediction)
+            
+            # Emitir resultado por WebSocket
+            socketio.emit('kiosk_prediction', {
+                'kiosk_id': kiosk_data.get('kiosk_id'),
+                'timestamp': prediction['timestamp'].isoformat(),
+                'metrics': prediction['features'],
+                'is_anomaly': bool(prediction['predicted_value']),
+                'confidence': prediction['confidence']
+            })
+            
+            return prediction
             
         except Exception as e:
-            logging.error(f"[ERROR] Error al inicializar el modelo: {e}")
-            return SimpleAnomalyDetector()
-
-    def predict_anomaly(self, kiosk_data: Dict[str, Union[float, int]]) -> float:
-        """
-        Predice la probabilidad de anomalía para un kiosk.
-        
-        Args:
-            kiosk_data (dict): Métricas del kiosk
-                - cpu_usage (float): Uso de CPU
-                - memory_usage (float): Uso de memoria
-                - network_latency (float): Latencia de red
-        
-        Returns:
-            float: Probabilidad de anomalía (0.0 - 1.0)
-        """
-        # Validar y normalizar datos
-        features = [
-            kiosk_data.get('cpu_usage', 0.0) / 100.0,
-            kiosk_data.get('memory_usage', 0.0) / 100.0,
-            min(kiosk_data.get('network_latency', 0.0) / 300.0, 1.0)
-        ]
-
-        # Convertir a tensor
-        input_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
-
-        # Predecir
-        with torch.no_grad():
-            anomaly_prob = self.model(input_tensor).item()
-
-        return anomaly_prob
-
-    def train_model(self, training_data):
-        """
-        Método para reentrenar el modelo con nuevos datos.
-        NOTA: La implementación completa de reentrenamiento 
-        se hará en scripts separados.
-        
-        Args:
-            training_data (list): Datos de entrenamiento
-        """
-        # TODO: Implementar lógica completa de reentrenamiento
-        pass
-
-    def generate_synthetic_data(self, num_samples=1000):
-        """
-        Genera datos sintéticos para entrenamiento.
-        
-        Args:
-            num_samples (int): Número de muestras a generar
-        
-        Returns:
-            list: Datos sintéticos de kiosks
-        """
-        synthetic_data = []
-        for _ in range(num_samples):
-            cpu_usage = np.random.uniform(0, 100)
-            memory_usage = np.random.uniform(0, 100)
-            network_latency = np.random.uniform(10, 300)
-            
-            # Heurística simple para etiquetar anomalías
-            is_anomaly = 1 if (cpu_usage > 90 or memory_usage > 90 or network_latency > 250) else 0
-            
-            synthetic_data.append({
-                'cpu_usage': cpu_usage,
-                'memory_usage': memory_usage,
-                'network_latency': network_latency,
-                'is_anomaly': is_anomaly
-            })
-        
-        return synthetic_data 
+            logging.error(f"Error en predicción: {str(e)}")
+            return None 

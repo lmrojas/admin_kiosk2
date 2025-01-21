@@ -49,4 +49,18 @@ class DriftMetrics(db.Model):
     feature_drift = db.Column(JSON)
     performance_metrics = db.Column(JSON)
     alerts = db.Column(JSON)
-    severity = db.Column(db.String(20)) 
+    severity = db.Column(db.String(20))
+
+    def to_dict(self):
+        """Convierte el objeto a un diccionario."""
+        return {
+            'id': self.id,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'model_version': self.model_version,
+            'analysis_window': self.analysis_window,
+            'distribution_shift': self.distribution_shift,
+            'feature_drift': self.feature_drift or {},
+            'performance_metrics': self.performance_metrics or {},
+            'alerts': self.alerts or [],
+            'severity': self.severity
+        } 
