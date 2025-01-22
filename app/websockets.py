@@ -22,14 +22,17 @@ Autor: Sistema Automatizado siguiendo @cura.md
 Fecha: 2024
 """
 
-from flask import current_app
-from flask_socketio import SocketIO
+from flask import current_app, request
+from flask_socketio import SocketIO, emit
 from datetime import datetime
 from app.models.kiosk import Kiosk, SensorData
 import logging
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import SQLAlchemyError
 
 # Instancia global de SocketIO con manejo de errores mejorado
 socketio = SocketIO(logger=True, engineio_logger=True)
+db = SQLAlchemy()
 
 def init_websockets(socketio_instance: SocketIO) -> None:
     """
@@ -156,4 +159,112 @@ def emit_anomaly_detected(kiosk_id: int, probability: float, metrics: dict) -> N
         })
         
     except Exception as e:
-        current_app.logger.error(f'Error al emitir anomalía: {str(e)}') 
+        current_app.logger.error(f'Error al emitir anomalía: {str(e)}')
+
+@socketio.on('connect')
+def handle_connect():
+    """Maneja conexiones nuevas de kiosks"""
+    logger = logging.getLogger('websockets')
+    logger.info(f'Nueva conexión WebSocket desde {request.sid}')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Maneja desconexiones de kiosks"""
+    logger = logging.getLogger('websockets')
+    try:
+        # Marcar kiosks como offline al desconectar
+        kiosks = Kiosk.query.filter_by(socket_id=request.sid).all()
+        for kiosk in kiosks:
+            kiosk.is_online = False
+            kiosk.socket_id = None
+        db.session.commit()
+        emit('kiosk_status_change', broadcast=True)
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f'Error actualizando estado de kiosks: {str(e)}')
+    except Exception as e:
+        logger.error(f'Error en desconexión: {str(e)}')
+    finally:
+        logger.info(f'Desconexión WebSocket de {request.sid}')
+
+@socketio.on('registration')
+def handle_registration(data):
+    """Maneja el registro inicial de un kiosk"""
+    logger = logging.getLogger('websockets')
+    try:
+        serial = data.get('serial')
+        name = data.get('name')
+        
+        logger.info(f'Intento de registro: {name} ({serial})')
+        
+        # Verificar registro en BD dentro de una transacción
+        kiosk = Kiosk.query.filter_by(uuid=serial).first()
+        if kiosk:
+            kiosk.is_online = True
+            kiosk.last_online = datetime.now()
+            kiosk.socket_id = request.sid
+            db.session.commit()
+            
+            # Notificar cambio de estado
+            emit('kiosk_status_change', broadcast=True)
+            
+            logger.info(f'Kiosk registrado: {name} ({serial})')
+            return {'status': 'registered'}
+        else:
+            logger.warning(f'Intento de registro de kiosk no autorizado: {serial}')
+            return {'status': 'unauthorized'}
+            
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f'Error de base de datos en registro: {str(e)}')
+        return {'status': 'error', 'message': 'Database error'}
+    except Exception as e:
+        logger.error(f'Error en registro de kiosk: {str(e)}')
+        return {'status': 'error', 'message': 'Internal error'}
+
+@socketio.on('kiosk_update')
+def handle_kiosk_update(data):
+    """Maneja actualizaciones de datos de kiosks"""
+    logger = logging.getLogger('websockets')
+    try:
+        serial = data.get('serial')
+        kiosk = Kiosk.query.filter_by(uuid=serial).first()
+        
+        if kiosk and kiosk.socket_id == request.sid:
+            # Actualizar datos del kiosk dentro de una transacción
+            kiosk.last_online = datetime.now()
+            kiosk.status = data.get('status', {}).get('current', 'unknown')
+            kiosk.is_online = True
+            
+            # Extraer valores de sensores con manejo de errores
+            sensors = data.get('sensors', {})
+            sensor_data = SensorData(
+                kiosk_id=kiosk.id,
+                temperature=float(sensors.get('temperature', {}).get('value', 0)),
+                humidity=float(sensors.get('humidity', {}).get('value', 0)),
+                door_status=sensors.get('door_status', 'unknown'),
+                printer_status=sensors.get('printer_status', 'unknown'),
+                network_quality=float(sensors.get('network_quality', {}).get('value', 0)),
+                voltage=float(sensors.get('voltage', 220)),
+                ventilation=sensors.get('ventilation', 'normal')
+            )
+            db.session.add(sensor_data)
+            db.session.commit()
+            
+            # Emitir actualización a todos los clientes
+            emit('kiosk_data_update', {
+                'kiosk_id': kiosk.id,
+                'status': kiosk.status,
+                'last_update': kiosk.last_online.isoformat()
+            }, broadcast=True)
+            
+            logger.info(f'Datos actualizados para kiosk {serial}')
+            
+        else:
+            logger.warning(f'Actualización rechazada para kiosk {serial}: no registrado o sesión inválida')
+            
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f'Error de base de datos en actualización: {str(e)}')
+    except Exception as e:
+        logger.error(f'Error procesando actualización de kiosk: {str(e)}') 

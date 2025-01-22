@@ -117,4 +117,56 @@ def test_kiosk_online_offline(app, user):
     
     kiosk.mark_offline()
     
-    assert kiosk.status == 'inactive' 
+    assert kiosk.status == 'inactive'
+
+def test_update_reported_location(test_kiosk, db):
+    """Prueba la actualización de ubicación reportada."""
+    test_kiosk.update_reported_location(
+        latitude=-33.4570,
+        longitude=-70.6484,
+        altitude=505,
+        accuracy=15.0
+    )
+    db.session.commit()
+    
+    assert test_kiosk.reported_latitude == -33.4570
+    assert test_kiosk.reported_longitude == -70.6484
+    assert test_kiosk.reported_altitude == 505
+    assert test_kiosk.reported_location_accuracy == 15.0
+    assert test_kiosk.reported_location_updated_at is not None
+
+def test_get_location_difference(test_kiosk):
+    """Prueba el cálculo de diferencia entre ubicaciones."""
+    test_kiosk.update_reported_location(
+        latitude=-33.4571,  # ~20m de diferencia
+        longitude=-70.6485,
+        altitude=510,
+        accuracy=10.0
+    )
+    
+    distance, time_diff = test_kiosk.get_location_difference()
+    
+    assert distance is not None
+    assert distance > 0  # Debe haber una diferencia
+    assert time_diff is not None
+    assert time_diff >= 0  # La diferencia de tiempo debe ser positiva
+
+def test_no_location_difference_when_missing_data(test_kiosk):
+    """Prueba que no hay diferencia cuando faltan datos de ubicación."""
+    test_kiosk.latitude = None
+    distance, time_diff = test_kiosk.get_location_difference()
+    
+    assert distance is None
+    assert time_diff is None
+
+def test_location_update_timestamps(test_kiosk):
+    """Prueba que los timestamps se actualizan correctamente."""
+    original_timestamp = test_kiosk.location_updated_at
+    
+    # Esperar un momento para asegurar diferencia en timestamps
+    test_kiosk.update_reported_location(
+        latitude=-33.4580,
+        longitude=-70.6490
+    )
+    
+    assert test_kiosk.reported_location_updated_at > original_timestamp 

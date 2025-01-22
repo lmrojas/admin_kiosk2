@@ -1,8 +1,8 @@
-"""initial migration
+"""Initial migration
 
-Revision ID: 0db44f6c341e
+Revision ID: 1467e664b7c1
 Revises: 
-Create Date: 2025-01-20 14:10:37.651150
+Create Date: 2025-01-22 02:53:04.401254
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '0db44f6c341e'
+revision = '1467e664b7c1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,32 +29,6 @@ def upgrade():
     sa.Column('alerts', postgresql.JSON(astext_type=sa.Text()), nullable=True),
     sa.Column('severity', sa.String(length=20), nullable=True),
     sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('kiosks',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('uuid', sa.String(length=36), nullable=False),
-    sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('location', sa.String(length=200), nullable=True),
-    sa.Column('latitude', sa.Float(), nullable=True),
-    sa.Column('longitude', sa.Float(), nullable=True),
-    sa.Column('altitude', sa.Float(), nullable=True),
-    sa.Column('location_updated_at', sa.DateTime(), nullable=True),
-    sa.Column('location_accuracy', sa.Float(), nullable=True),
-    sa.Column('status', sa.String(length=20), nullable=True),
-    sa.Column('last_online', sa.DateTime(), nullable=True),
-    sa.Column('cpu_model', sa.String(length=100), nullable=True),
-    sa.Column('ram_total', sa.Float(), nullable=True),
-    sa.Column('storage_total', sa.Float(), nullable=True),
-    sa.Column('ip_address', sa.String(length=45), nullable=True),
-    sa.Column('mac_address', sa.String(length=17), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('owner_id', sa.Integer(), nullable=True),
-    sa.Column('health_score', sa.Float(), nullable=True),
-    sa.Column('anomaly_probability', sa.Float(), nullable=True),
-    sa.ForeignKeyConstraint(['owner_id'], ['users.id'], name='fk_kiosk_owner', ondelete='SET NULL', use_alter=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('uuid')
     )
     op.create_table('model_metrics',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -80,7 +54,7 @@ def upgrade():
     sa.Column('extra_data', postgresql.JSON(astext_type=sa.Text()), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('user',
+    op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
@@ -98,6 +72,67 @@ def upgrade():
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('username')
     )
+    op.create_table('kiosks',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('uuid', sa.String(length=36), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('store_name', sa.String(length=200), nullable=True),
+    sa.Column('location', sa.String(length=200), nullable=True),
+    sa.Column('latitude', sa.Float(), nullable=True),
+    sa.Column('longitude', sa.Float(), nullable=True),
+    sa.Column('altitude', sa.Float(), nullable=True),
+    sa.Column('location_updated_at', sa.DateTime(), nullable=True),
+    sa.Column('location_accuracy', sa.Float(), nullable=True),
+    sa.Column('reported_latitude', sa.Float(), nullable=True),
+    sa.Column('reported_longitude', sa.Float(), nullable=True),
+    sa.Column('reported_altitude', sa.Float(), nullable=True),
+    sa.Column('reported_location_updated_at', sa.DateTime(), nullable=True),
+    sa.Column('reported_location_accuracy', sa.Float(), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('last_online', sa.DateTime(), nullable=True),
+    sa.Column('cpu_model', sa.String(length=100), nullable=True),
+    sa.Column('ram_total', sa.Float(), nullable=True),
+    sa.Column('storage_total', sa.Float(), nullable=True),
+    sa.Column('ip_address', sa.String(length=45), nullable=True),
+    sa.Column('mac_address', sa.String(length=17), nullable=True),
+    sa.Column('capabilities', sa.JSON(), nullable=True),
+    sa.Column('credentials_hash', sa.String(length=128), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('owner_id', sa.Integer(), nullable=True),
+    sa.Column('health_score', sa.Float(), nullable=True),
+    sa.Column('anomaly_probability', sa.Float(), nullable=True),
+    sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ondelete='SET NULL'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_table('security_audit',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('ip_address', sa.String(length=45), nullable=False, comment='Dirección IP desde donde se realizó el acceso'),
+    sa.Column('user_id', sa.Integer(), nullable=True, comment='ID del usuario que realizó la acción'),
+    sa.Column('timestamp', sa.DateTime(), nullable=False, comment='Fecha y hora del evento'),
+    sa.Column('event_type', sa.String(length=20), nullable=False, comment='Tipo de evento de seguridad'),
+    sa.Column('method', sa.String(length=10), nullable=True, comment='Método HTTP utilizado'),
+    sa.Column('path', sa.String(length=255), nullable=True, comment='Ruta accedida'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('security_event',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('event_type', sa.String(length=50), nullable=False, comment='Tipo de evento de seguridad'),
+    sa.Column('description', sa.Text(), nullable=False, comment='Descripción del evento'),
+    sa.Column('severity', sa.String(length=20), nullable=False, comment='Severidad del evento (LOW, MEDIUM, HIGH, CRITICAL)'),
+    sa.Column('event_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True, comment='Metadatos adicionales del evento'),
+    sa.Column('user_id', sa.Integer(), nullable=True, comment='ID del usuario relacionado con el evento'),
+    sa.Column('timestamp', sa.DateTime(), nullable=False, comment='Fecha y hora del evento'),
+    sa.Column('resolved', sa.Boolean(), nullable=True, comment='Indica si el evento ha sido resuelto'),
+    sa.Column('resolved_by', sa.Integer(), nullable=True, comment='ID del usuario que resolvió el evento'),
+    sa.Column('resolution_notes', sa.Text(), nullable=True, comment='Notas sobre la resolución del evento'),
+    sa.Column('resolved_at', sa.DateTime(), nullable=True, comment='Fecha y hora de resolución del evento'),
+    sa.ForeignKeyConstraint(['resolved_by'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('sensor_data',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('kiosk_id', sa.Integer(), nullable=False),
@@ -114,9 +149,11 @@ def upgrade():
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('sensor_data')
-    op.drop_table('user')
+    op.drop_table('security_event')
+    op.drop_table('security_audit')
+    op.drop_table('kiosks')
+    op.drop_table('users')
     op.drop_table('prediction_logs')
     op.drop_table('model_metrics')
-    op.drop_table('kiosks')
     op.drop_table('drift_metrics')
     # ### end Alembic commands ###

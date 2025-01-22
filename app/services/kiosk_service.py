@@ -7,6 +7,9 @@ from app.services.kiosk_ai_service import KioskAIService
 from datetime import datetime, timedelta
 import uuid
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 class KioskService:
     """
@@ -15,16 +18,59 @@ class KioskService:
     """
 
     @staticmethod
-    def create_kiosk(name, location=None, owner_id=None):
+    def verify_tables():
+        """
+        Verifica que las tablas necesarias para kiosks existan en la base de datos.
+        No crea kiosks - solo verifica la estructura.
+        
+        Returns:
+            bool: True si la estructura es correcta
+            
+        Raises:
+            Exception: Si hay algún problema con la estructura
+        """
+        try:
+            inspector = db.inspect(db.engine)
+            
+            # Verificar tabla de kiosks
+            if 'kiosks' not in inspector.get_table_names():
+                raise Exception("Tabla de kiosks no existe")
+                
+            # Verificar tabla de datos de sensores
+            if 'sensor_data' not in inspector.get_table_names():
+                raise Exception("Tabla de datos de sensores no existe")
+                
+            # Verificar columnas requeridas en Kiosk
+            kiosk_columns = [c['name'] for c in inspector.get_columns('kiosks')]
+            required_columns = ['id', 'name', 'uuid', 'status', 'owner_id', 'capabilities', 'credentials_hash']
+            missing = [col for col in required_columns if col not in kiosk_columns]
+            if missing:
+                raise Exception(f"Faltan columnas en tabla Kiosk: {missing}")
+                
+            logger.info("Estructura de tablas verificada correctamente")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error verificando tablas: {str(e)}")
+            raise
+
+    @staticmethod
+    def create_kiosk(name, store_name=None, location=None, latitude=None, longitude=None, owner_id=None):
         """
         Crea un nuevo kiosk con validaciones básicas.
         """
         if not name:
             raise ValueError("El nombre del kiosk es obligatorio")
 
+        if (latitude is not None and longitude is None) or (latitude is None and longitude is not None):
+            raise ValueError("Si se proporciona una coordenada, ambas son requeridas")
+
         kiosk = Kiosk(
             name=name, 
+            store_name=store_name,
             location=location, 
+            latitude=latitude,
+            longitude=longitude,
             owner_id=owner_id,
             status='inactive',
             uuid=str(uuid.uuid4())
@@ -33,6 +79,49 @@ class KioskService:
         db.session.add(kiosk)
         db.session.commit()
         return kiosk
+
+    @staticmethod
+    def register_kiosk_from_spawner(serial, name, location, hardware_info):
+        """
+        Registra un kiosk inicializado por el spawner.
+        Si ya existe, actualiza su información.
+        """
+        try:
+            kiosk = Kiosk.query.filter_by(uuid=serial).first()
+            
+            if kiosk:
+                # Actualizar kiosk existente
+                kiosk.name = name
+                kiosk.location = location
+                kiosk.status = 'active'
+                kiosk.last_online = datetime.utcnow()
+            else:
+                # Crear nuevo kiosk
+                kiosk = Kiosk(
+                    uuid=serial,
+                    name=name,
+                    location=location,
+                    status='active',
+                    last_online=datetime.utcnow()
+                )
+                db.session.add(kiosk)
+            
+            # Actualizar hardware info
+            if hardware_info:
+                kiosk.cpu_model = hardware_info.get('cpu_model')
+                kiosk.ram_total = hardware_info.get('ram_total')
+                kiosk.storage_total = hardware_info.get('storage_total')
+                kiosk.ip_address = hardware_info.get('ip_address')
+                kiosk.mac_address = hardware_info.get('mac_address')
+            
+            db.session.commit()
+            logger.info(f"Kiosk registrado/actualizado: {name} ({serial})")
+            return kiosk
+            
+        except Exception as e:
+            logger.error(f"Error registrando kiosk desde spawner: {str(e)}")
+            db.session.rollback()
+            raise
 
     @staticmethod
     def update_kiosk_status(kiosk_id, status, hardware_info=None):
@@ -168,6 +257,45 @@ class KioskService:
         return distance 
 
     @staticmethod
+    def validate_kiosk_credentials(serial: str, credentials: dict) -> bool:
+        """
+        Valida las credenciales de un kiosk.
+        Args:
+            serial (str): UUID/Serial del kiosk
+            credentials (dict): Credenciales a validar
+        Returns:
+            bool: True si las credenciales son válidas
+        """
+        kiosk = Kiosk.query.filter_by(uuid=serial).first()
+        if not kiosk:
+            return False
+        return kiosk.validate_credentials(credentials)
+
+    @staticmethod
+    def is_registered(serial: str) -> bool:
+        """
+        Verifica si un kiosk está registrado en el sistema.
+        Args:
+            serial (str): UUID/Serial del kiosk
+        Returns:
+            bool: True si el kiosk está registrado
+        """
+        return Kiosk.query.filter_by(uuid=serial).first() is not None
+
+    @staticmethod
+    def update_kiosk_capabilities(kiosk_id: int, capabilities: dict) -> None:
+        """
+        Actualiza las capacidades de un kiosk.
+        Args:
+            kiosk_id (int): ID del kiosk
+            capabilities (dict): Diccionario con las capacidades del kiosk
+        """
+        kiosk = KioskService.get_kiosk_by_id(kiosk_id)
+        if kiosk:
+            kiosk.capabilities = capabilities
+            db.session.commit()
+
+    @staticmethod
     def get_kiosk_by_id(kiosk_id):
         """
         Obtiene un kiosk por su ID.
@@ -207,3 +335,22 @@ class KioskService:
 
         db.session.commit()
         return kiosk 
+
+    @staticmethod
+    def delete_kiosk(kiosk_uuid):
+        """
+        Elimina un kiosk por su UUID.
+        """
+        kiosk = Kiosk.query.filter_by(uuid=kiosk_uuid).first()
+        if not kiosk:
+            raise ValueError(f"Kiosk con UUID {kiosk_uuid} no encontrado")
+        
+        # Eliminar datos de sensores asociados
+        SensorData.query.filter_by(kiosk_id=kiosk.id).delete()
+        
+        db.session.delete(kiosk)
+        db.session.commit()
+
+        logger.info(f"Kiosk {kiosk_uuid} eliminado por el usuario {current_user.username}")
+        
+        return True 

@@ -87,6 +87,12 @@ class KioskAIService:
                 min(kiosk_data.get('network_latency', 0.0) / 300.0, 1.0)
             ]
             
+            # Agregar diferencia de ubicación si está disponible
+            location_diff = kiosk_data.get('location_difference', 0.0)
+            if location_diff is not None:
+                # Normalizar diferencia de ubicación (asumiendo máximo 1000m como umbral)
+                features.append(min(location_diff / 1000.0, 1.0))
+            
             # Convertir a tensor y predecir
             input_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
             start_time = time.time()
@@ -107,7 +113,8 @@ class KioskAIService:
                 'features': {
                     'cpu_usage': kiosk_data.get('cpu_usage'),
                     'memory_usage': kiosk_data.get('memory_usage'),
-                    'network_latency': kiosk_data.get('network_latency')
+                    'network_latency': kiosk_data.get('network_latency'),
+                    'location_difference': location_diff
                 },
                 'predicted_value': int(is_anomaly),
                 'confidence': anomaly_prob,
@@ -130,4 +137,45 @@ class KioskAIService:
             
         except Exception as e:
             logging.error(f"Error en predicción: {str(e)}")
+            return None
+
+    def detect_location_anomaly(self, kiosk_id: int) -> Dict:
+        """
+        Detecta anomalías específicas de ubicación para un kiosk.
+        """
+        try:
+            from app.models.kiosk import Kiosk
+            kiosk = Kiosk.query.get(kiosk_id)
+            if not kiosk:
+                return None
+                
+            distance, time_diff = kiosk.get_location_difference()
+            if distance is None:
+                return None
+                
+            # Preparar datos para predicción
+            kiosk_data = {
+                'kiosk_id': kiosk_id,
+                'location_difference': distance,
+                'cpu_usage': 0.0,  # Valores neutrales para otros features
+                'memory_usage': 0.0,
+                'network_latency': 0.0
+            }
+            
+            # Usar el modelo existente para predecir
+            prediction = self.predict_anomaly(kiosk_data)
+            
+            if prediction and prediction['predicted_value']:
+                # Emitir alerta específica de ubicación
+                socketio.emit('location_anomaly', {
+                    'kiosk_id': kiosk_id,
+                    'distance': distance,
+                    'time_diff': time_diff,
+                    'confidence': prediction['confidence']
+                })
+                
+            return prediction
+            
+        except Exception as e:
+            logging.error(f"Error en detección de anomalía de ubicación: {str(e)}")
             return None 

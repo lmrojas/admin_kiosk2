@@ -48,6 +48,34 @@
         border-radius: 5px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+    .map-legend {
+        position: absolute;
+        bottom: 20px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+    }
+    .legend-marker {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+        border: 2px solid white;
+    }
+    .marker-assigned {
+        background-color: #2196F3;
+    }
+    .marker-reported {
+        background-color: #4CAF50;
+    }
 </style>
 {% endblock %}
 
@@ -58,13 +86,26 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Mapa de Kiosks</h5>
-                    <div>
-                        <button class="btn btn-sm btn-primary" onclick="findMyLocation()">
-                            <i class="fas fa-location-arrow"></i> Mi Ubicación
-                        </button>
-                        <button class="btn btn-sm btn-secondary" onclick="fitAllMarkers()">
-                            <i class="fas fa-expand-arrows-alt"></i> Ver Todos
-                        </button>
+                    <div class="d-flex gap-2">
+                        <div class="btn-group me-2" role="group">
+                            <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-primary">
+                                <i class="fas fa-list"></i> Ver Mis Kiosks
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard Principal
+                            </a>
+                            <a href="{{ url_for('ai.dashboard') }}" class="btn btn-info">
+                                <i class="fas fa-brain"></i> Dashboard IA
+                            </a>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="findMyLocation()">
+                                <i class="fas fa-location-arrow"></i> Mi Ubicación
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="fitAllMarkers()">
+                                <i class="fas fa-expand-arrows-alt"></i> Ver Todos
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body position-relative">
@@ -83,6 +124,17 @@
                         </div>
                     </div>
                     <div id="map"></div>
+                    <div class="map-legend">
+                        <h6 class="mb-2">Leyenda</h6>
+                        <div class="legend-item">
+                            <div class="legend-marker marker-assigned"></div>
+                            <span>Ubicación Asignada</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker marker-reported"></div>
+                            <span>Ubicación Reportada</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -90,7 +142,7 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
     let map;
@@ -99,7 +151,7 @@
 
     // Inicializar mapa
     function initMap() {
-        map = L.map('map').setView([0, 0], 2);
+        map = L.map('map').setView([-38.416097, -63.616672], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
@@ -109,29 +161,81 @@
 
     // Cargar kiosks
     function loadKiosks() {
-        fetch('/kiosk/api/all')
+        fetch('/kiosk/api/kiosks')
             .then(response => response.json())
             .then(data => {
-                markers = data.map(kiosk => {
-                    const marker = L.marker([kiosk.latitude, kiosk.longitude]);
-                    const popupContent = `
-                        <div class="kiosk-info">
-                            <h5>${kiosk.name}</h5>
-                            <p>
-                                <strong>ID:</strong> ${kiosk.id}<br>
-                                <strong>Estado:</strong> 
-                                <span class="status status-${kiosk.status}">
-                                    ${kiosk.status}
-                                </span>
-                            </p>
-                            <a href="/kiosk/${kiosk.id}" class="btn btn-sm btn-primary">
-                                Ver Detalles
-                            </a>
-                        </div>
-                    `;
-                    marker.bindPopup(popupContent);
-                    marker.status = kiosk.status;
-                    return marker;
+                markers = [];
+                data.forEach(kiosk => {
+                    // Marcador para ubicación asignada
+                    if (kiosk.latitude && kiosk.longitude) {
+                        const assignedMarker = L.marker([kiosk.latitude, kiosk.longitude], {
+                            icon: L.divIcon({
+                                className: 'custom-div-icon',
+                                html: '<div style="background-color: #2196F3; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+                                iconSize: [12, 12],
+                                iconAnchor: [6, 6]
+                            })
+                        });
+                        assignedMarker.status = kiosk.status;
+                        assignedMarker.bindPopup(`
+                            <div class="kiosk-info">
+                                <h5>${kiosk.name}</h5>
+                                <p>
+                                    <strong>ID:</strong> ${kiosk.id}<br>
+                                    <strong>Estado:</strong> 
+                                    <span class="status status-${kiosk.status}">
+                                        ${kiosk.status}
+                                    </span><br>
+                                    <strong>Ubicación:</strong> Asignada
+                                </p>
+                                <a href="/kiosk/${kiosk.id}" class="btn btn-sm btn-primary">
+                                    Ver Detalles
+                                </a>
+                            </div>
+                        `);
+                        markers.push(assignedMarker);
+
+                        // Marcador para ubicación reportada si existe
+                        if (kiosk.reported_latitude && kiosk.reported_longitude) {
+                            const reportedMarker = L.marker([kiosk.reported_latitude, kiosk.reported_longitude], {
+                                icon: L.divIcon({
+                                    className: 'custom-div-icon',
+                                    html: '<div style="background-color: #4CAF50; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+                                    iconSize: [12, 12],
+                                    iconAnchor: [6, 6]
+                                })
+                            });
+                            reportedMarker.status = kiosk.status;
+                            reportedMarker.bindPopup(`
+                                <div class="kiosk-info">
+                                    <h5>${kiosk.name}</h5>
+                                    <p>
+                                        <strong>ID:</strong> ${kiosk.id}<br>
+                                        <strong>Estado:</strong> 
+                                        <span class="status status-${kiosk.status}">
+                                            ${kiosk.status}
+                                        </span><br>
+                                        <strong>Ubicación:</strong> Reportada
+                                    </p>
+                                    <a href="/kiosk/${kiosk.id}" class="btn btn-sm btn-primary">
+                                        Ver Detalles
+                                    </a>
+                                </div>
+                            `);
+                            markers.push(reportedMarker);
+
+                            // Línea entre los puntos
+                            const line = L.polyline([
+                                [kiosk.latitude, kiosk.longitude],
+                                [kiosk.reported_latitude, kiosk.reported_longitude]
+                            ], {
+                                color: '#FF5722',
+                                dashArray: '5, 10',
+                                opacity: 0.6
+                            });
+                            markers.push(line);
+                        }
+                    }
                 });
                 updateMarkers();
                 fitAllMarkers();

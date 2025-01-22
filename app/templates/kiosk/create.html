@@ -4,20 +4,62 @@
 
 {% block title %}Crear Nuevo Kiosk{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+    #map { 
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <h2>Crear Nuevo Kiosk</h2>
     
     <form method="POST" class="mt-4">
-        {{ csrf_token() }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+        
         <div class="form-group">
+            <label for="uuid" class="fw-bold">Serial (UUID)</label>
+            <input type="text" class="form-control bg-light border" id="uuid" name="uuid" value="{{ uuid }}" readonly style="cursor: not-allowed; font-family: monospace;">
+            <small class="form-text text-muted">Identificador único del kiosk generado automáticamente</small>
+        </div>
+        
+        <div class="form-group mt-3">
             <label for="name">Nombre del Kiosk</label>
             <input type="text" class="form-control" id="name" name="name" required>
         </div>
         
         <div class="form-group mt-3">
+            <label for="store_name">Nombre del Local</label>
+            <input type="text" class="form-control" id="store_name" name="store_name" placeholder="Ej: Supermercado San Vicente">
+        </div>
+        
+        <div class="form-group mt-3">
             <label for="location">Ubicación</label>
-            <input type="text" class="form-control" id="location" name="location">
+            <div class="input-group">
+                <input type="text" class="form-control" id="location" name="location">
+                <button type="button" class="btn btn-primary" onclick="searchLocation()">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group mt-3">
+            <label>Seleccionar Ubicación en el Mapa</label>
+            <div id="map"></div>
+            <div class="coordinates-display mt-2">
+                <span id="coord-display">Haga clic en el mapa para seleccionar la ubicación</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-info mt-2" onclick="findMyLocation()">
+                <i class="fas fa-location-arrow"></i> Mi Ubicación
+            </button>
         </div>
         
         <div class="mt-4">
@@ -28,20 +70,119 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
+    let map;
+    let marker;
+    
+    // Inicializar mapa centrado en Argentina
+    function initMap() {
+        map = L.map('map').setView([-38.416097, -63.616672], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Evento de clic en el mapa
+        map.on('click', function(e) {
+            setMarkerPosition(e.latlng.lat, e.latlng.lng);
+        });
+    }
+
+    // Establecer posición del marcador
+    function setMarkerPosition(lat, lng) {
+        if (marker) {
+            marker.remove();
+        }
+        marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+        document.getElementById('coord-display').innerHTML = 
+            `Latitud: ${lat.toFixed(6)}, Longitud: ${lng.toFixed(6)}`;
+    }
+
+    // Buscar ubicación por dirección
+    function searchLocation() {
+        const location = document.getElementById('location').value;
+        if (!location) {
+            alert('Por favor ingrese una ubicación para buscar');
+            return;
+        }
+
+        // Usar Nominatim para buscar la ubicación
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`, {
+            headers: {
+                'User-Agent': 'KioskAdminSystem/1.0'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const result = data[0];
+                const lat = parseFloat(result.lat);
+                const lng = parseFloat(result.lon);
+                
+                map.setView([lat, lng], 13);
+                setMarkerPosition(lat, lng);
+            } else {
+                alert('No se encontró la ubicación');
+            }
+        })
+        .catch(error => {
+            console.error('Error buscando ubicación:', error);
+            alert('Error al buscar la ubicación');
+        });
+    }
+
+    // Encontrar ubicación del usuario
+    function findMyLocation() {
+        if (!navigator.geolocation) {
+            alert('Geolocalización no soportada por su navegador');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                map.setView([lat, lng], 13);
+                setMarkerPosition(lat, lng);
+            },
+            error => {
+                console.error('Error obteniendo ubicación:', error);
+                alert('Error al obtener su ubicación');
+            }
+        );
+    }
+
     // Validación de formulario
     document.querySelector('form').addEventListener('submit', function(e) {
         const name = document.getElementById('name').value.trim();
+        const lat = document.getElementById('latitude').value;
+        const lng = document.getElementById('longitude').value;
+        
         if (!name) {
             e.preventDefault();
             alert('El nombre del kiosk es obligatorio');
             return;
         }
+        
+        if (!lat || !lng) {
+            e.preventDefault();
+            alert('Por favor seleccione una ubicación en el mapa');
+            return;
+        }
     });
-</script>
-{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    // Permitir búsqueda con Enter en el campo de ubicación
+    document.getElementById('location').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchLocation();
+        }
+    });
+
+    // Inicializar mapa cuando se carga la página
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
 {% endblock %} 

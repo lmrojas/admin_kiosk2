@@ -2,13 +2,13 @@ A continuación se presenta la **versión final y actualizada** de la Guía Defi
 
 1. La **lógica de testing** o simulación de kiosks (alta, comportamientos, estados, etc.) se realiza **en un microservicio/app aparte**, **por fuera** del sistema principal.  
 2. El **sistema en sí** (admin_kiosk) únicamente **recibe** datos (vía WebSockets/API) y responde a los kiosks reales o simulados (ej.: reiniciar, bloquear…).  
-3. **No hay simulación interna** en Flask: todos los “datos simulados” llegan como si fueran reales.
+3. **No hay simulación interna** en Flask: todos los "datos simulados" llegan como si fueran reales.
 
 > **Nota**: Este documento **reemplaza** versiones anteriores de la guía, enfatizando la existencia de una **Kiosk App separada** para simular o testear comportamientos (en paralelo) mientras el sistema Flask + IA se mantiene ligero, seguro y enfocado en la lógica real.
 
 ---
 
-# Guía Definitiva de Desarrollo: Sistema de Kiosks Inteligentes con Flask + IA (Entrenamiento Automático)
+# Guía Definitiva de Desarrollo: Sistema de Kiosks Inteligentes con Flask + IA
 
 ## 0. Preámbulo: Objetivo y Filosofía
 
@@ -18,15 +18,16 @@ Crear un **sistema** que:
 - **Garantice la seguridad** (datos y autenticación).  
 - **Aproveche IA** para análisis de anomalías, alertas, etc.  
 - **Minimice la intervención humana**, incluso para reentrenar el modelo IA.  
-- **Separe** la simulación/log de pruebas (kiosks) del sistema productivo.
+- **Separe** completamente la simulación/testing del sistema productivo.
 
 ### 0.2 Principios Fundamentales
 - **Arquitectura**: MVT (Model-View-Template) + Services.  
 - **Separación estricta** de responsabilidades (módulos, servicios).  
 - **Buenas prácticas** (CI/CD, testing, MLOps, etc.).  
-- **Cambios** solo bajo las normas de `@cura.md`, actualizando `project_custom_structure.txt`.
+- **Cambios** solo bajo las normas de `cura.md`, actualizando `project_custom_structure.txt`.
+- **No simulación interna**: Los kiosks son entidades externas que se conectan al sistema.
 
-> **Nuevo Énfasis**: **Automatizar** el entrenamiento IA mezclando datos reales y sintéticos, **sin** mezclar lógica de test (simulación kiosk) en la app Flask.
+> **Importante**: El sistema NO simula kiosks internamente. Todo kiosk debe registrarse a través del sistema administrativo y conectarse vía WebSocket.
 
 ---
 
@@ -39,43 +40,31 @@ admin_kiosk/
 │   ├── __init__.py
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── user.py
+│   │   ├── kiosk.py        # Modelo de kiosk y datos de sensores
+│   │   └── user.py         # Modelo de usuario y autenticación
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── auth_service.py
-│   │   ├── kiosk_ai_service.py
-│   │   ├── kiosk_service.py
-│   │   └── ...
+│   │   ├── kiosk_service.py  # Manejo de kiosks reales
+│   │   └── kiosk_ai_service.py  # Análisis de anomalías
 │   ├── blueprints/
 │   │   ├── __init__.py
 │   │   ├── auth.py
 │   │   └── kiosk.py
-│   ├── templates/
-│   │   ├── base.html
-│   │   └── login.html
-│   └── utils/
-│       └── __init__.py
-│
-├── config/
-│   └── default.py
+│   └── templates/
+│       ├── base.html
+│       └── kiosk/
+│           ├── index.html      # Lista de kiosks
+│           └── dashboard.html  # Estado del kiosk
 │
 ├── scripts/
-│   ├── export_structure.py        # Exporta project_custom_structure.txt
-│   ├── train_ai_model.py          # Entrena el modelo IA (manual/auto)
-│   ├── generate_synthetic_data.py # Genera datos sintéticos
-│   ├── auto_retrain_pipeline.py   # Pipeline de reentrenamiento (cron, etc.)
-│   └── ... (scripts externos para pruebas)
-│
-├── tests/
-│   ├── unit/
-│   └── integration/
-│
-├── migrations/
+│   ├── init_roles.py      # Inicializa roles y permisos
+│   ├── init_data.py       # Crea usuario admin inicial
+│   └── init_kiosks.py     # Verifica estructura de tablas
 │
 ├── requirements.txt
 ├── run.py
-├── README.md
-└── project_custom_structure.txt
+└── README.md
 ```
 
 ### 1.1 Comentario Obligatorio
@@ -210,39 +199,53 @@ class AuthService:
 import torch
 
 class KioskAIService:
-    """Servicio IA para detección de anomalías en kiosks."""
-
-    def __init__(self, model_path=None):
-        self.model = self._load_model(model_path)
-
-    def _load_model(self, path):
-        if path:
-            try:
-                model = torch.load(path, map_location=torch.device('cpu'))
-                model.eval()
-                return model
-            except Exception as e:
-                print(f"[ERROR] Carga de modelo IA fallida: {e}")
-                return None
-        return None
-
+    """
+    Servicio para análisis de anomalías en kiosks.
+    Procesa datos recibidos de kiosks reales.
+    """
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+        
+    def __init__(self):
+        if not self._initialized:
+            self.model = None
+            self._initialized = True
+            self._load_model()
+            
+    def _load_model(self):
+        """Carga el modelo de detección de anomalías."""
+        try:
+            model_path = current_app.config['AI_MODEL_PATH']
+            self.model = torch.load(model_path)
+            self.model.eval()
+            logger.info("Modelo AI cargado correctamente")
+        except Exception as e:
+            logger.error(f"Error cargando modelo AI: {str(e)}")
+            
     def predict_anomaly(self, kiosk_data):
         """
-        kiosk_data: dict con (cpu_usage, memory_usage, network_latency).
-        Retorna prob. anomalía (float).
+        Predice anomalías en datos recibidos de un kiosk.
+        Args:
+            kiosk_data (dict): Datos de CPU, memoria, latencia, etc.
+        Returns:
+            float: Probabilidad de anomalía
         """
         if not self.model:
             return 0.0
-
-        features = torch.tensor([
-            kiosk_data.get('cpu_usage', 0.0),
-            kiosk_data.get('memory_usage', 0.0),
-            kiosk_data.get('network_latency', 0.0)
-        ], dtype=torch.float).unsqueeze(0)
-
-        with torch.no_grad():
-            output = self.model(features)
-            return float(torch.sigmoid(output).item())
+            
+        try:
+            features = self._prepare_features(kiosk_data)
+            with torch.no_grad():
+                prediction = self.model(features)
+                return float(torch.sigmoid(prediction).item())
+        except Exception as e:
+            logger.error(f"Error prediciendo anomalía: {str(e)}")
+            return 0.0
 ```
 
 ### 5.3 `app/services/kiosk_service.py`
@@ -341,8 +344,8 @@ flask db upgrade
 ## 10. Testing (SIN Simulación Interna)
 
 **Relevante**:  
-- No existe un “motor de simulación” para kiosks dentro de Flask.  
-- Tests de “kiosk behaviors” se hacen externamente, enviando datos vía WebSockets o API.  
+- No existe un "motor de simulación" para kiosks dentro de Flask.  
+- Tests de "kiosk behaviors" se hacen externamente, enviando datos vía WebSockets o API.  
 - Aquí, solo tests unitarios/integración del core.
 
 ```python
@@ -537,7 +540,7 @@ if __name__ == "__main__":
 
 - Flask-SocketIO (u otro) para recibir métricas en vivo.  
 - **Los kiosks** (reales o simulados) **conectan** a `admin_kiosk` y **emiten** sus datos.  
-- **admin_kiosk** solo **escucha** y responde (por ejemplo, enviando comandos como “reiniciar kiosk”).
+- **admin_kiosk** solo **escucha** y responde (por ejemplo, enviando comandos como "reiniciar kiosk").
 
 ---
 
@@ -564,7 +567,7 @@ if __name__ == "__main__":
 
 - **Simulaciones** (kiosk offline, alta temperatura, etc.) se hacen en un **microservicio/app aparte**.  
 - **admin_kiosk** solo recibe los datos por WebSocket/API.  
-- Sin motor interno de simulación => la lógica de test está “fuera” de la aplicación Flask.
+- Sin motor interno de simulación => la lógica de test está "fuera" de la aplicación Flask.
 
 ---
 
@@ -576,5 +579,5 @@ if __name__ == "__main__":
   - `generate_synthetic_data.py` (crea datos sintéticos).  
   - `auto_retrain_pipeline.py` (pipeline automático).  
   - *Kiosk-simulator apps* (externas) que envían datos al sistema.  
-- **Resultado**: Una plataforma que recibe “datos reales” (aunque simulados externamente), registra estados y alertas, e integra un proceso MLOps (reentrenamiento) independiente.  
+- **Resultado**: Una plataforma que recibe "datos reales" (aunque simulados externamente), registra estados y alertas, e integra un proceso MLOps (reentrenamiento) independiente.  
 

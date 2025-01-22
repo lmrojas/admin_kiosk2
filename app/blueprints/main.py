@@ -11,8 +11,8 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    """Página de inicio del sistema"""
-    return render_template('main/index.html')
+    """Página de inicio del sistema - Muestra el mapa de kiosks"""
+    return redirect(url_for('kiosk.show_map'))
 
 @main_bp.route('/dashboard')
 @login_required

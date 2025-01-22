@@ -1,13 +1,40 @@
 /* Dashboard de IA - Admin Kiosk */
 
+/* Variables globales */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --accent-color: #3498db;
+    --success-color: #2ecc71;
+    --warning-color: #f1c40f;
+    --danger-color: #e74c3c;
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+}
+
+/* Estilos base y animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Contenedor principal */
 .dashboard-container {
     padding: 20px;
     max-width: 1400px;
     margin: 0 auto;
-    background-color: #f8f9fa;
+    background-color: var(--light-bg);
+    animation: fadeIn 0.5s ease-out;
 }
 
-/* Header */
+/* Header mejorado */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -15,10 +42,15 @@
     margin-bottom: 30px;
     flex-wrap: wrap;
     gap: 20px;
-    padding: 1rem;
+    padding: 1.5rem;
     background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-speed);
+}
+
+.dashboard-header:hover {
+    transform: translateY(-5px);
 }
 
 .dashboard-controls {
@@ -27,24 +59,153 @@
     align-items: center;
 }
 
-.date-range {
-    display: flex;
-    gap: 10px;
+/* Controles mejorados */
+.form-select, .form-control, .btn {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 8px 15px;
+    transition: all var(--transition-speed);
 }
 
-/* Estado de conexión */
+.form-select:hover, .form-control:hover {
+    border-color: var(--accent-color);
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border: none;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: all var(--transition-speed);
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Estado de conexión mejorado */
 .connection-status {
     padding: 8px 15px;
     border-radius: 20px;
     font-weight: 500;
+    transition: all var(--transition-speed);
 }
 
 .status-connected {
-    color: #28a745;
+    color: var(--success-color);
+    animation: pulse 2s infinite;
 }
 
 .status-disconnected {
-    color: #dc3545;
+    color: var(--danger-color);
+}
+
+/* Cards mejorados */
+.metric-card, .drift-card, .realtime-metric-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-speed);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.metric-card:hover, .drift-card:hover, .realtime-metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* Tooltips personalizados */
+[title] {
+    position: relative;
+    cursor: help;
+}
+
+[title]:hover::before {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    background: rgba(44, 62, 80, 0.9);
+    color: white;
+    font-size: 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Gráficos y visualizaciones */
+canvas {
+    border-radius: 8px;
+    transition: all var(--transition-speed);
+}
+
+canvas:hover {
+    transform: scale(1.02);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .dashboard-controls {
+        flex-direction: column;
+    }
+    
+    .date-range {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .drift-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animaciones de carga */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.2),
+        transparent
+    );
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 /* Sección en Tiempo Real */

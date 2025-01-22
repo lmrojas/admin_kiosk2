@@ -26,6 +26,7 @@ class UserPermission(str, Enum):
     UPDATE_KIOSK = 'update_kiosk'
     VIEW_KIOSK = 'view_kiosk'
     CREATE_KIOSK = 'create_kiosk'
+    DELETE_KIOSK = 'delete_kiosk'
 
 class User(db.Model, UserMixin):
     """Modelo de usuario con soporte para autenticación de dos factores."""
@@ -74,7 +75,8 @@ class User(db.Model, UserMixin):
                 UserPermission.VIEW_DASHBOARD.value,
                 UserPermission.VIEW_LOGS.value,
                 UserPermission.UPDATE_KIOSK.value,
-                UserPermission.VIEW_KIOSK.value
+                UserPermission.VIEW_KIOSK.value,
+                UserPermission.DELETE_KIOSK.value
             ],
             UserRole.OPERATOR.value: [
                 UserPermission.UPDATE_KIOSK.value,

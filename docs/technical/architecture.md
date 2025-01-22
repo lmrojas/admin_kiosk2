@@ -7,16 +7,16 @@ Este código solo puede ser modificado según @cura.md y project_custom_structur
 El sistema Admin Kiosk proporciona una plataforma centralizada para la gestión y monitoreo de kiosks, integrando capacidades de IA para la detección de anomalías y optimización de operaciones.
 
 ### 1.2 Arquitectura General
-- **Patrón MVT (Model-View-Template)**
+- **Patrón MVC (Model-View-Controller) con Flask**
 - **Servicios Independientes**
 - **API RESTful**
 - **WebSockets para Monitoreo en Tiempo Real**
 
 ## 2. Componentes Principales
 
-### 2.1 Backend (Django + Django REST Framework)
-- **Models**: Definición de datos y lógica de negocio
-- **Views**: Controladores de la lógica de presentación
+### 2.1 Backend (Flask + SQLAlchemy)
+- **Models**: Definición de datos usando SQLAlchemy ORM
+- **Views**: Blueprints y rutas de Flask
 - **Services**: Lógica de negocio compleja y operaciones
 - **Tasks**: Procesos asíncronos y trabajos programados
 
@@ -61,29 +61,29 @@ sequenceDiagram
 ### 4.1 Capas de Seguridad
 - Autenticación de dos factores (2FA)
 - JWT con rotación de tokens
-- Rate limiting
+- Rate limiting con Flask-Limiter
 - Validación de entrada
-- CORS configurado
-- Headers de seguridad
+- CORS configurado con Flask-CORS
+- Headers de seguridad personalizados
 
 ### 4.2 Protección de Datos
 - Encriptación en tránsito (TLS)
 - Encriptación en reposo
 - Sanitización de entrada
-- Auditoría de accesos
+- Auditoría de accesos con SQLAlchemy
 
 ## 5. Escalabilidad y Rendimiento
 
 ### 5.1 Estrategias de Caché
 - Redis para caché distribuido
-- Caché de consultas frecuentes
-- Caché de sesiones
+- Flask-Caching para consultas frecuentes
+- Caché de sesiones con Flask-Session
 
 ### 5.2 Optimizaciones
-- Índices de base de datos
+- Índices de base de datos SQLAlchemy
 - Consultas optimizadas
-- Compresión de respuestas
-- Lazy loading
+- Compresión de respuestas Flask
+- Lazy loading de relaciones SQLAlchemy
 
 ## 6. Monitoreo y Logging
 
@@ -94,7 +94,7 @@ sequenceDiagram
 - Métricas de negocio
 
 ### 6.2 Sistema de Logs
-- Logs estructurados
+- Logs estructurados con Flask-Logger
 - Niveles de severidad
 - Rotación de logs
 - Agregación centralizada
@@ -109,6 +109,6 @@ sequenceDiagram
 
 ### 7.2 CI/CD
 - GitHub Actions
-- Tests automatizados
+- Tests automatizados con pytest
 - Despliegue continuo
 - Monitoreo de salud 

@@ -146,3 +146,22 @@ def test_model_training(ai_service):
     
     # Verificar que la pérdida disminuya
     assert final_loss <= initial_loss 
+
+def test_location_anomaly_detection(test_kiosk):
+    """Prueba la detección de anomalías de ubicación."""
+    # Simular una diferencia significativa en ubicación
+    test_kiosk.update_reported_location(
+        latitude=-33.4600,  # ~300m de diferencia
+        longitude=-70.6500,
+        altitude=600,
+        accuracy=10.0
+    )
+    
+    ai_service = KioskAIService()
+    prediction = ai_service.detect_location_anomaly(test_kiosk.id)
+    
+    assert prediction is not None
+    assert 'predicted_value' in prediction
+    assert 'confidence' in prediction
+    assert 'features' in prediction
+    assert 'location_difference' in prediction['features'] 

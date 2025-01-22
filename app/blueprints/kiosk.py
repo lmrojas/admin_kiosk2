@@ -3,11 +3,13 @@
 
 from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from app.models.kiosk import Kiosk
+from app.models.kiosk import Kiosk, KioskLocationHistory
 from app.models.user import UserPermission
 from app.services.kiosk_service import KioskService
 from app.utils.decorators import permission_required
 import logging
+import uuid
+from datetime import datetime
 
 kiosk_bp = Blueprint('kiosk', __name__, url_prefix='/kiosk')
 kiosk_service = KioskService()
@@ -88,12 +90,18 @@ def create_kiosk():
     """
     if request.method == 'POST':
         name = request.form.get('name')
+        store_name = request.form.get('store_name')
         location = request.form.get('location')
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
         
         try:
             kiosk = kiosk_service.create_kiosk(
                 name=name,
+                store_name=store_name,
                 location=location,
+                latitude=float(latitude) if latitude else None,
+                longitude=float(longitude) if longitude else None,
                 owner_id=current_user.id
             )
             flash('Kiosk creado exitosamente', 'success')
@@ -104,7 +112,7 @@ def create_kiosk():
             flash('Error al crear el kiosk', 'error')
             logging.error(f'Error creando kiosk: {str(e)}')
     
-    return render_template('kiosk/create.html')
+    return render_template('kiosk/create.html', uuid=str(uuid.uuid4()))
 
 @kiosk_bp.route('/api/nearby')
 @login_required
@@ -125,6 +133,30 @@ def get_nearby_kiosks():
         return jsonify({'error': 'Parámetros inválidos'}), 400
     except Exception as e:
         logging.error(f"Error obteniendo kiosks cercanos: {str(e)}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@kiosk_bp.route('/api/kiosks')
+@login_required
+@permission_required(UserPermission.VIEW_KIOSK.value)
+def get_all_kiosks():
+    """
+    Obtiene todos los kiosks con su información de geolocalización.
+    Requiere permiso: VIEW_KIOSK
+    """
+    try:
+        kiosks = kiosk_service.get_all_kiosks()
+        return jsonify([{
+            'id': k.id,
+            'name': k.name,
+            'latitude': k.latitude,
+            'longitude': k.longitude,
+            'reported_latitude': k.reported_latitude,
+            'reported_longitude': k.reported_longitude,
+            'status': k.status
+        } for k in kiosks if k.latitude and k.longitude])
+        
+    except Exception as e:
+        logging.error(f'Error al obtener todos los kiosks: {str(e)}')
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 @kiosk_bp.route('/api/kiosk/<int:kiosk_id>/metrics', methods=['POST'])
@@ -170,4 +202,101 @@ def update_kiosk_metrics(kiosk_id):
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         logging.error(f"Error actualizando métricas del kiosk {kiosk_id}: {str(e)}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@kiosk_bp.route('/<uuid:kiosk_uuid>/delete', methods=['POST'])
+@login_required
+@permission_required(UserPermission.DELETE_KIOSK)
+def delete_kiosk(kiosk_uuid):
+    """
+    Eliminar un kiosk existente.
+    Requiere permiso: DELETE_KIOSK
+    """
+    try:
+        kiosk_service.delete_kiosk(str(kiosk_uuid))
+        flash('Kiosk eliminado exitosamente', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    except Exception as e:
+        flash('Error al eliminar el kiosk', 'error')
+        logging.error(f'Error eliminando kiosk: {str(e)}')
+    
+    return redirect(url_for('kiosk.list_kiosks'))
+
+@kiosk_bp.route('/map')
+@login_required
+@permission_required(UserPermission.VIEW_KIOSK.value)
+def show_map():
+    """Muestra el mapa con todos los kiosks."""
+    return render_template('kiosk/map.html')
+
+@kiosk_bp.route('/<int:kiosk_id>/location_history')
+@login_required
+@permission_required(UserPermission.VIEW_KIOSK.value)
+def location_history(kiosk_id):
+    """
+    Vista dedicada para el historial de ubicaciones de un kiosk.
+    Requiere permiso: VIEW_KIOSK
+    """
+    kiosk = kiosk_service.get_kiosk_by_id(kiosk_id)
+    if not kiosk:
+        flash('Kiosk no encontrado', 'error')
+        return redirect(url_for('kiosk.list_kiosks'))
+    
+    return render_template('kiosk/location_history.html', kiosk=kiosk)
+
+@kiosk_bp.route('/api/kiosk/<int:kiosk_id>/location_history')
+@login_required
+@permission_required(UserPermission.VIEW_KIOSK.value)
+def get_location_history(kiosk_id):
+    """
+    Obtiene el historial de ubicaciones de un kiosk con filtros opcionales.
+    Requiere permiso: VIEW_KIOSK
+    
+    Parámetros de query:
+    - date_from: Fecha inicial (ISO format)
+    - date_to: Fecha final (ISO format)
+    - location_type: Tipo de ubicación ('assigned' o 'reported')
+    """
+    try:
+        kiosk = kiosk_service.get_kiosk_by_id(kiosk_id)
+        if not kiosk:
+            return jsonify({'error': 'Kiosk no encontrado'}), 404
+            
+        # Construir query base
+        query = kiosk.location_history
+        
+        # Aplicar filtros si existen
+        if request.args.get('date_from'):
+            date_from = datetime.fromisoformat(request.args.get('date_from'))
+            query = query.filter(KioskLocationHistory.timestamp >= date_from)
+            
+        if request.args.get('date_to'):
+            date_to = datetime.fromisoformat(request.args.get('date_to'))
+            query = query.filter(KioskLocationHistory.timestamp <= date_to)
+            
+        if request.args.get('location_type'):
+            query = query.filter(KioskLocationHistory.location_type == request.args.get('location_type'))
+        
+        # Ordenar por fecha descendente
+        history = query.order_by(KioskLocationHistory.timestamp.desc()).all()
+        
+        return jsonify([{
+            'id': h.id,
+            'latitude': h.latitude,
+            'longitude': h.longitude,
+            'accuracy': h.accuracy,
+            'timestamp': h.timestamp.isoformat(),
+            'location_type': h.location_type,
+            'previous_latitude': h.previous_latitude,
+            'previous_longitude': h.previous_longitude,
+            'change_reason': h.change_reason,
+            'created_at': h.created_at.isoformat(),
+            'created_by': h.created_by
+        } for h in history])
+        
+    except ValueError as e:
+        return jsonify({'error': f'Error en formato de fecha: {str(e)}'}), 400
+    except Exception as e:
+        logging.error(f'Error al obtener historial de ubicaciones: {str(e)}')
         return jsonify({'error': 'Error interno del servidor'}), 500 

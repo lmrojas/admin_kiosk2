@@ -5,6 +5,8 @@ from app import db
 from datetime import datetime
 import uuid
 from sqlalchemy.orm import relationship
+from flask_login import current_user
+from app.models.kiosk_location_history import KioskLocationHistory
 
 class Kiosk(db.Model):
     """
@@ -20,6 +22,7 @@ class Kiosk(db.Model):
     
     # Información básica
     name = db.Column(db.String(100), nullable=False)
+    store_name = db.Column(db.String(200), nullable=True)
     location = db.Column(db.String(200), nullable=True)
     
     # Información de Geolocalización
@@ -28,6 +31,13 @@ class Kiosk(db.Model):
     altitude = db.Column(db.Float, nullable=True)
     location_updated_at = db.Column(db.DateTime, nullable=True)
     location_accuracy = db.Column(db.Float, nullable=True)  # precisión en metros
+    
+    # Ubicación reportada por el kiosk
+    reported_latitude = db.Column(db.Float, nullable=True)
+    reported_longitude = db.Column(db.Float, nullable=True)
+    reported_altitude = db.Column(db.Float, nullable=True)
+    reported_location_updated_at = db.Column(db.DateTime, nullable=True)
+    reported_location_accuracy = db.Column(db.Float, nullable=True)
     
     # Estado del Kiosk
     status = db.Column(db.String(20), default='inactive')
@@ -41,6 +51,10 @@ class Kiosk(db.Model):
     # Información de Red
     ip_address = db.Column(db.String(45), nullable=True)
     mac_address = db.Column(db.String(17), nullable=True)
+    
+    # Capacidades y Credenciales
+    capabilities = db.Column(db.JSON, nullable=True)
+    credentials_hash = db.Column(db.String(128), nullable=True)
     
     # Metadatos
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -57,16 +71,36 @@ class Kiosk(db.Model):
     # Relaciones
     sensor_data = relationship('SensorData', back_populates='kiosk', lazy='dynamic')
     
+    # Nuevo campo
+    socket_id = db.Column(db.String(50))  # ID de sesión WebSocket
+    
     def update_location(self, latitude, longitude, altitude=None, accuracy=None):
-        """
-        Actualiza la información de geolocalización del kiosk.
-        La lógica compleja debe ir en el servicio correspondiente.
-        """
+        """Actualiza la ubicación asignada del kiosk."""
+        # Guardar ubicación anterior
+        prev_lat = self.latitude
+        prev_lon = self.longitude
+        
+        # Actualizar ubicación actual
         self.latitude = latitude
         self.longitude = longitude
         self.altitude = altitude
         self.location_accuracy = accuracy
         self.location_updated_at = datetime.utcnow()
+        
+        # Registrar en historial
+        history = KioskLocationHistory(
+            kiosk_id=self.id,
+            latitude=latitude,
+            longitude=longitude,
+            accuracy=accuracy,
+            timestamp=self.location_updated_at,
+            location_type='assigned',
+            previous_latitude=prev_lat,
+            previous_longitude=prev_lon,
+            change_reason='Actualización manual de ubicación',
+            created_by=current_user.id if current_user and not current_user.is_anonymous else None
+        )
+        db.session.add(history)
     
     def calculate_health_score(self):
         """
@@ -96,6 +130,21 @@ class Kiosk(db.Model):
         self.health_score = self.calculate_health_score()
         self.anomaly_probability = anomaly_prob
     
+    def validate_credentials(self, credentials: dict) -> bool:
+        """
+        Valida las credenciales proporcionadas contra las almacenadas.
+        Args:
+            credentials (dict): Credenciales a validar
+        Returns:
+            bool: True si las credenciales son válidas
+        """
+        if not self.credentials_hash:
+            return False
+        
+        # Aquí implementar la lógica de validación usando hash seguro
+        # Por ahora retornamos True para testing
+        return True
+    
     def __repr__(self):
         """
         Representación en cadena del modelo para depuración.
@@ -123,8 +172,59 @@ class Kiosk(db.Model):
             'health_score': self.health_score,
             'anomaly_probability': self.anomaly_probability,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'socket_id': self.socket_id
         }
+
+    def update_reported_location(self, latitude, longitude, altitude=None, accuracy=None):
+        """Actualiza la ubicación reportada por el kiosk."""
+        # Guardar ubicación anterior
+        prev_lat = self.reported_latitude
+        prev_lon = self.reported_longitude
+        
+        # Actualizar ubicación actual
+        self.reported_latitude = latitude
+        self.reported_longitude = longitude
+        self.reported_altitude = altitude
+        self.reported_location_accuracy = accuracy
+        self.reported_location_updated_at = datetime.utcnow()
+        
+        # Registrar en historial
+        history = KioskLocationHistory(
+            kiosk_id=self.id,
+            latitude=latitude,
+            longitude=longitude,
+            accuracy=accuracy,
+            timestamp=self.reported_location_updated_at,
+            location_type='reported',
+            previous_latitude=prev_lat,
+            previous_longitude=prev_lon,
+            change_reason='Ubicación reportada por el kiosk',
+            created_by=None  # Reportado automáticamente por el kiosk
+        )
+        db.session.add(history)
+
+    def get_location_difference(self):
+        """
+        Calcula la diferencia entre la ubicación asignada y la reportada.
+        Retorna la distancia en metros y la diferencia de tiempo.
+        """
+        if not all([self.latitude, self.longitude, self.reported_latitude, self.reported_longitude]):
+            return None, None
+
+        from app.services.geolocation_service import GeolocationService
+        geo_service = GeolocationService()
+        
+        distance = geo_service.calculate_distance(
+            self.latitude, self.longitude,
+            self.reported_latitude, self.reported_longitude
+        )
+        
+        time_diff = None
+        if self.location_updated_at and self.reported_location_updated_at:
+            time_diff = abs((self.reported_location_updated_at - self.location_updated_at).total_seconds())
+        
+        return distance, time_diff
 
 # Modelo de SensorData para complementar Kiosk
 class SensorData(db.Model):

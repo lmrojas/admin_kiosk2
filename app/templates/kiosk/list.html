@@ -108,6 +108,7 @@
                     <thead>
                         <tr>
                             <th>Nombre</th>
+                            <th>Local</th>
                             <th>Ubicación</th>
                             <th>Estado</th>
                             <th>Salud</th>
@@ -119,6 +120,7 @@
                         {% for kiosk in kiosks %}
                         <tr>
                             <td>{{ kiosk.name }}</td>
+                            <td>{{ kiosk.store_name or 'No especificado' }}</td>
                             <td>{{ kiosk.location or 'N/A' }}</td>
                             <td>
                                 <span class="badge bg-{{ 'success' if kiosk.status == 'active' else 'danger' }}">

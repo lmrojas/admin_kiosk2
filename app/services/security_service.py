@@ -9,9 +9,11 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify, current_app
 from typing import Optional, Callable, Dict, Any
+from app.models.security import SecurityAudit, SecurityEvent
+from app import db
 
 class SecurityService:
-    """Servicio para gestionar aspectos de seguridad"""
+    """Servicio unificado para gestionar todos los aspectos de seguridad"""
     
     def __init__(self):
         """Inicializa el servicio de seguridad"""
@@ -51,13 +53,11 @@ class SecurityService:
             if additional_claims:
                 payload.update(additional_claims)
                 
-            token = jwt.encode(
+            return jwt.encode(
                 payload,
                 current_app.config['SECRET_KEY'],
                 algorithm='HS256'
             )
-            
-            return token
             
         except Exception as e:
             self.logger.error(f"Error generando JWT: {str(e)}")
@@ -164,4 +164,72 @@ class SecurityService:
                 
                 return f(*args, **kwargs)
             return wrapped
-        return decorator 
+        return decorator
+
+    def log_access(self, ip: str, method: str, path: str, user_id: Optional[int] = None) -> None:
+        """
+        Registra un intento de acceso al sistema.
+        
+        Args:
+            ip: Dirección IP del acceso
+            method: Método HTTP
+            path: Ruta accedida
+            user_id: ID del usuario (opcional)
+        """
+        try:
+            audit = SecurityAudit(
+                ip_address=ip,
+                method=method,
+                path=path,
+                user_id=user_id,
+                timestamp=datetime.now(),
+                event_type='ACCESS'
+            )
+            db.session.add(audit)
+            db.session.commit()
+        except Exception as e:
+            self.logger.error(f"Error al registrar acceso: {str(e)}", 
+                        extra={'ip': ip})
+            db.session.rollback()
+
+    def log_security_event(self, 
+                          event_type: str, 
+                          description: str, 
+                          severity: str,
+                          metadata: Optional[Dict] = None,
+                          user_id: Optional[int] = None) -> None:
+        """
+        Registra un evento de seguridad.
+        
+        Args:
+            event_type: Tipo de evento
+            description: Descripción del evento
+            severity: Severidad del evento
+            metadata: Metadatos adicionales (opcional)
+            user_id: ID del usuario (opcional)
+        """
+        try:
+            event = SecurityEvent(
+                event_type=event_type,
+                description=description,
+                severity=severity,
+                event_metadata=metadata or {},
+                user_id=user_id,
+                timestamp=datetime.now()
+            )
+            db.session.add(event)
+            db.session.commit()
+            
+            if severity in ['HIGH', 'CRITICAL']:
+                self.logger.critical(
+                    f"Evento de seguridad crítico: {description}",
+                    extra={
+                        'event_type': event_type,
+                        'severity': severity,
+                        'user_id': user_id
+                    }
+                )
+        except Exception as e:
+            self.logger.error(f"Error al registrar evento de seguridad: {str(e)}")
+            db.session.rollback()
+            raise 

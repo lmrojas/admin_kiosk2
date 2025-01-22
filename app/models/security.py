@@ -3,180 +3,86 @@ Modelos de seguridad para Admin Kiosk.
 Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
 """
 
-from django.db import models
-from django.contrib.postgres.fields import JSONField
-from django.utils.translation import gettext_lazy as _
+from datetime import datetime
+from app import db
+from sqlalchemy.dialects.postgresql import JSONB
+from enum import Enum
 
-class SecurityAudit(models.Model):
+class EventType(str, Enum):
+    ACCESS = 'ACCESS'
+    LOGIN = 'LOGIN'
+    LOGIN_FAILED = 'LOGIN_FAILED'
+    LOGOUT = 'LOGOUT'
+    PASSWORD_CHANGE = 'PASSWORD_CHANGE'
+    PASSWORD_RESET = 'PASSWORD_RESET'
+    TWO_FACTOR = 'TWO_FACTOR'
+    TOKEN_REFRESH = 'TOKEN_REFRESH'
+
+class SecurityAudit(db.Model):
     """Modelo para auditar accesos al sistema."""
+    
+    __tablename__ = 'security_audit'
 
-    class EventType(models.TextChoices):
-        ACCESS = 'ACCESS', _('Acceso')
-        LOGIN = 'LOGIN', _('Inicio de sesión')
-        LOGIN_FAILED = 'LOGIN_FAILED', _('Inicio de sesión fallido')
-        LOGOUT = 'LOGOUT', _('Cierre de sesión')
-        PASSWORD_CHANGE = 'PASSWORD_CHANGE', _('Cambio de contraseña')
-        PASSWORD_RESET = 'PASSWORD_RESET', _('Restablecimiento de contraseña')
-        TWO_FACTOR = 'TWO_FACTOR', _('Autenticación de dos factores')
-        TOKEN_REFRESH = 'TOKEN_REFRESH', _('Actualización de token')
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(45), nullable=False, 
+                          comment='Dirección IP desde donde se realizó el acceso')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True,
+                       comment='ID del usuario que realizó la acción')
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow,
+                         comment='Fecha y hora del evento')
+    event_type = db.Column(db.String(20), nullable=False,
+                          comment='Tipo de evento de seguridad')
+    method = db.Column(db.String(10), nullable=True,
+                      comment='Método HTTP utilizado')
+    path = db.Column(db.String(255), nullable=True,
+                    comment='Ruta accedida')
 
-    ip_address = models.GenericIPAddressField(
-        verbose_name=_('Dirección IP'),
-        help_text=_('Dirección IP desde donde se realizó el acceso')
-    )
-    
-    user_id = models.IntegerField(
-        verbose_name=_('ID de Usuario'),
-        null=True,
-        blank=True,
-        help_text=_('ID del usuario que realizó la acción')
-    )
-    
-    timestamp = models.DateTimeField(
-        verbose_name=_('Fecha y hora'),
-        auto_now_add=True,
-        help_text=_('Fecha y hora del evento')
-    )
-    
-    event_type = models.CharField(
-        verbose_name=_('Tipo de evento'),
-        max_length=20,
-        choices=EventType.choices,
-        help_text=_('Tipo de evento de seguridad')
-    )
-    
-    method = models.CharField(
-        verbose_name=_('Método HTTP'),
-        max_length=10,
-        help_text=_('Método HTTP utilizado')
-    )
-    
-    path = models.CharField(
-        verbose_name=_('Ruta'),
-        max_length=255,
-        help_text=_('Ruta accedida')
-    )
-    
-    user_agent = models.TextField(
-        verbose_name=_('User Agent'),
-        null=True,
-        blank=True,
-        help_text=_('User Agent del cliente')
-    )
-    
-    metadata = JSONField(
-        verbose_name=_('Metadata'),
-        default=dict,
-        help_text=_('Información adicional del evento')
-    )
+    def __repr__(self):
+        return f'<SecurityAudit {self.event_type} {self.timestamp}>'
 
-    class Meta:
-        verbose_name = _('Auditoría de Seguridad')
-        verbose_name_plural = _('Auditorías de Seguridad')
-        indexes = [
-            models.Index(fields=['timestamp']),
-            models.Index(fields=['ip_address']),
-            models.Index(fields=['event_type']),
-            models.Index(fields=['user_id']),
-        ]
-        ordering = ['-timestamp']
+class SecurityEvent(db.Model):
+    """Modelo para eventos de seguridad del sistema."""
+    
+    __tablename__ = 'security_event'
 
-    def __str__(self):
-        return f"{self.get_event_type_display()} - {self.ip_address} - {self.timestamp}"
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(50), nullable=False,
+                          comment='Tipo de evento de seguridad')
+    description = db.Column(db.Text, nullable=False,
+                          comment='Descripción del evento')
+    severity = db.Column(db.String(20), nullable=False,
+                        comment='Severidad del evento (LOW, MEDIUM, HIGH, CRITICAL)')
+    event_metadata = db.Column(JSONB, nullable=True,
+                        comment='Metadatos adicionales del evento')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True,
+                       comment='ID del usuario relacionado con el evento')
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow,
+                         comment='Fecha y hora del evento')
+    
+    # Campos de resolución
+    resolved = db.Column(db.Boolean, default=False,
+                        comment='Indica si el evento ha sido resuelto')
+    resolved_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True,
+                           comment='ID del usuario que resolvió el evento')
+    resolution_notes = db.Column(db.Text, nullable=True,
+                                comment='Notas sobre la resolución del evento')
+    resolved_at = db.Column(db.DateTime, nullable=True,
+                           comment='Fecha y hora de resolución del evento')
 
-class SecurityEvent(models.Model):
-    """Modelo para eventos de seguridad específicos."""
-
-    class Severity(models.TextChoices):
-        LOW = 'LOW', _('Baja')
-        MEDIUM = 'MEDIUM', _('Media')
-        HIGH = 'HIGH', _('Alta')
-        CRITICAL = 'CRITICAL', _('Crítica')
-
-    event_type = models.CharField(
-        verbose_name=_('Tipo de evento'),
-        max_length=50,
-        help_text=_('Identificador del tipo de evento de seguridad')
-    )
-    
-    description = models.TextField(
-        verbose_name=_('Descripción'),
-        help_text=_('Descripción detallada del evento')
-    )
-    
-    severity = models.CharField(
-        verbose_name=_('Severidad'),
-        max_length=10,
-        choices=Severity.choices,
-        help_text=_('Nivel de severidad del evento')
-    )
-    
-    timestamp = models.DateTimeField(
-        verbose_name=_('Fecha y hora'),
-        auto_now_add=True,
-        help_text=_('Fecha y hora del evento')
-    )
-    
-    user_id = models.IntegerField(
-        verbose_name=_('ID de Usuario'),
-        null=True,
-        blank=True,
-        help_text=_('ID del usuario relacionado con el evento')
-    )
-    
-    metadata = JSONField(
-        verbose_name=_('Metadata'),
-        default=dict,
-        help_text=_('Información adicional del evento')
-    )
-    
-    resolved = models.BooleanField(
-        verbose_name=_('Resuelto'),
-        default=False,
-        help_text=_('Indica si el evento ha sido resuelto')
-    )
-    
-    resolution_notes = models.TextField(
-        verbose_name=_('Notas de resolución'),
-        null=True,
-        blank=True,
-        help_text=_('Notas sobre la resolución del evento')
-    )
-    
-    resolved_by = models.IntegerField(
-        verbose_name=_('Resuelto por'),
-        null=True,
-        blank=True,
-        help_text=_('ID del usuario que resolvió el evento')
-    )
-    
-    resolved_at = models.DateTimeField(
-        verbose_name=_('Fecha de resolución'),
-        null=True,
-        blank=True,
-        help_text=_('Fecha y hora de resolución del evento')
-    )
-
-    class Meta:
-        verbose_name = _('Evento de Seguridad')
-        verbose_name_plural = _('Eventos de Seguridad')
-        indexes = [
-            models.Index(fields=['timestamp']),
-            models.Index(fields=['severity']),
-            models.Index(fields=['event_type']),
-            models.Index(fields=['resolved']),
-        ]
-        ordering = ['-timestamp']
-
-    def __str__(self):
-        return f"{self.event_type} - {self.severity} - {self.timestamp}"
+    def __repr__(self):
+        return f'<SecurityEvent {self.event_type} {self.severity} {self.timestamp}>'
 
     def resolve(self, user_id: int, notes: str) -> None:
-        """Marca el evento como resuelto."""
-        from django.utils import timezone
+        """
+        Marca el evento como resuelto.
         
+        Args:
+            user_id: ID del usuario que resuelve el evento
+            notes: Notas de resolución
+        """
         self.resolved = True
         self.resolved_by = user_id
         self.resolution_notes = notes
-        self.resolved_at = timezone.now()
-        self.save() 
+        self.resolved_at = datetime.utcnow()
+        db.session.add(self)
+        db.session.commit() 

@@ -8,7 +8,30 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <style>
-    #map { height: 400px; }
+    #map { 
+        height: 400px; 
+        width: 100%; 
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-height: 400px;
+        display: block !important;
+    }
+    .legend {
+        padding: 6px 8px;
+        background: white;
+        background: rgba(255,255,255,0.8);
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 5px;
+        line-height: 24px;
+    }
+    .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+    }
 </style>
 {% endblock %}
 
@@ -32,6 +55,7 @@
                                     {{ kiosk.status }}
                                 </span>
                             </p>
+                            <p><strong>Nombre del Local:</strong> {{ kiosk.store_name or 'No especificado' }}</p>
                         </div>
                         <div class="col-md-6">
                             <p><strong>Creado:</strong> {{ kiosk.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
@@ -72,32 +96,27 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header">
                     <h5 class="mb-0">Ubicación del Kiosk</h5>
-                    {% if kiosk.latitude and kiosk.longitude %}
-                    <button class="btn btn-sm btn-primary" onclick="centerMap()">
-                        Centrar Mapa
-                    </button>
-                    {% endif %}
                 </div>
                 <div class="card-body">
                     {% if kiosk.latitude and kiosk.longitude %}
                     <div class="row">
                         <div class="col-md-4">
+                            <h6>Ubicación Asignada:</h6>
                             <p><strong>Latitud:</strong> {{ "%.6f"|format(kiosk.latitude) }}</p>
                             <p><strong>Longitud:</strong> {{ "%.6f"|format(kiosk.longitude) }}</p>
-                            {% if kiosk.altitude %}
-                            <p><strong>Altitud:</strong> {{ "%.2f"|format(kiosk.altitude) }} m</p>
+                            {% if kiosk.reported_latitude and kiosk.reported_longitude %}
+                            <h6 class="mt-3">Ubicación Reportada:</h6>
+                            <p><strong>Latitud:</strong> {{ "%.6f"|format(kiosk.reported_latitude) }}</p>
+                            <p><strong>Longitud:</strong> {{ "%.6f"|format(kiosk.reported_longitude) }}</p>
                             {% endif %}
-                            {% if kiosk.location_accuracy %}
-                            <p><strong>Precisión:</strong> {{ "%.2f"|format(kiosk.location_accuracy) }} m</p>
-                            {% endif %}
-                            <p><strong>Última Actualización:</strong><br>
-                               {{ kiosk.location_updated_at.strftime('%Y-%m-%d %H:%M:%S') if kiosk.location_updated_at else 'N/A' }}
-                            </p>
+                            <button class="btn btn-primary btn-sm mt-2" onclick="centerMap()">
+                                <i class="fas fa-crosshairs"></i> Centrar Mapa
+                            </button>
                         </div>
                         <div class="col-md-8">
-                            <div id="map"></div>
+                            <div id="map" style="min-height: 400px;"></div>
                         </div>
                     </div>
                     {% else %}
@@ -105,6 +124,48 @@
                         No hay información de geolocalización disponible para este kiosk.
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Ubicaciones -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Historial de Ubicaciones</h5>
+                    <div>
+                        <a href="{{ url_for('kiosk.location_history', kiosk_id=kiosk.id) }}" class="btn btn-sm btn-info me-2">
+                            <i class="fas fa-history"></i> Ver Historial Completo
+                        </a>
+                        <button class="btn btn-sm btn-primary" onclick="refreshLocationHistory()">
+                            <i class="fas fa-sync"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Ubicación Anterior</th>
+                                    <th>Nueva Ubicación</th>
+                                    <th>Precisión</th>
+                                    <th>Razón del Cambio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="location-history-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        Cargando historial...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,255 +236,270 @@
         <a href="{{ url_for('kiosk.list_kiosks') }}" class="btn btn-secondary">
             Volver a la Lista
         </a>
+        <form action="{{ url_for('kiosk.delete_kiosk', kiosk_uuid=kiosk.uuid) }}" method="post" class="d-inline ms-2" onsubmit="return confirm('¿Estás seguro de eliminar este kiosk?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
-    // Inicialización del mapa
-    {% if kiosk.latitude and kiosk.longitude %}
-    const map = L.map('map').setView([{{ kiosk.latitude }}, {{ kiosk.longitude }}], 13);
+let kioskMap = null;
+let sensorChart = null;
+let socket = null;
+
+{% if kiosk.latitude and kiosk.longitude %}
+function initMap() {
+    console.log('Coordenadas disponibles:', {{ kiosk.latitude }}, {{ kiosk.longitude }});
+    
+    // Inicializar el mapa
+    kioskMap = L.map('map').setView([{{ kiosk.latitude }}, {{ kiosk.longitude }}], 13);
+    
+    // Agregar capa de OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    }).addTo(kioskMap);
 
-    const marker = L.marker([{{ kiosk.latitude }}, {{ kiosk.longitude }}])
-        .addTo(map)
-        .bindPopup("{{ kiosk.name }}");
+    // Agregar marcador para ubicación asignada
+    const assignedMarker = L.marker([{{ kiosk.latitude }}, {{ kiosk.longitude }}], {
+        title: 'Ubicación Asignada'
+    }).addTo(kioskMap);
+    assignedMarker.bindPopup('Ubicación Asignada');
 
-    function centerMap() {
-        map.setView([{{ kiosk.latitude }}, {{ kiosk.longitude }}], 13);
+    {% if kiosk.reported_latitude and kiosk.reported_longitude %}
+    // Agregar marcador para ubicación reportada
+    const reportedMarker = L.marker([{{ kiosk.reported_latitude }}, {{ kiosk.reported_longitude }}], {
+        title: 'Ubicación Reportada',
+        icon: L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background-color: #3498db;" class="marker-pin"></div>',
+            iconSize: [30, 42],
+            iconAnchor: [15, 42]
+        })
+    }).addTo(kioskMap);
+    reportedMarker.bindPopup('Ubicación Reportada');
+
+    // Dibujar línea entre los puntos
+    const latlngs = [
+        [{{ kiosk.latitude }}, {{ kiosk.longitude }}],
+        [{{ kiosk.reported_latitude }}, {{ kiosk.reported_longitude }}]
+    ];
+    const polyline = L.polyline(latlngs, {color: 'red'}).addTo(kioskMap);
+
+    // Ajustar vista para mostrar ambos puntos
+    const bounds = L.latLngBounds([
+        [{{ kiosk.latitude }}, {{ kiosk.longitude }}],
+        [{{ kiosk.reported_latitude }}, {{ kiosk.reported_longitude }}]
+    ]);
+    kioskMap.fitBounds(bounds);
+    {% endif %}
+}
+
+function centerMap() {
+    if (kioskMap) {
+        kioskMap.setView([{{ kiosk.latitude }}, {{ kiosk.longitude }}], 13);
     }
+}
+{% endif %}
 
-    // Buscar kiosks cercanos
-    fetch(`/kiosk/api/nearby?lat={{ kiosk.latitude }}&lon={{ kiosk.longitude }}&radius=5`)
+function loadLocationHistory() {
+    fetch('/kiosk/api/kiosk/{{ kiosk.id }}/location_history')
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(history) {
+            const tbody = document.getElementById('location-history-table');
+            if (!history || history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay historial de ubicaciones disponible</td></tr>';
+                return;
+            }
+
+            let html = '';
+            for (let h of history) {
+                html += '<tr>';
+                html += '<td>' + new Date(h.timestamp).toLocaleString() + '</td>';
+                html += '<td><span class="badge bg-' + (h.location_type === 'assigned' ? 'primary' : 'info') + '">';
+                html += h.location_type === 'assigned' ? 'Asignada' : 'Reportada';
+                html += '</span></td>';
+                html += '<td>';
+                if (h.previous_latitude && h.previous_longitude) {
+                    html += h.previous_latitude.toFixed(6) + ', ' + h.previous_longitude.toFixed(6);
+                } else {
+                    html += 'N/A';
+                }
+                html += '</td>';
+                html += '<td>' + h.latitude.toFixed(6) + ', ' + h.longitude.toFixed(6) + '</td>';
+                html += '<td>' + (h.accuracy ? h.accuracy.toFixed(2) + 'm' : 'N/A') + '</td>';
+                html += '<td>' + (h.change_reason || 'N/A') + '</td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+        })
+        .catch(function(error) {
+            console.error('Error cargando historial:', error);
+            document.getElementById('location-history-table').innerHTML = 
+                '<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial</td></tr>';
+        });
+}
+
+function refreshLocationHistory() {
+    const tbody = document.getElementById('location-history-table');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">' +
+        '<div class="spinner-border spinner-border-sm" role="status">' +
+        '<span class="visually-hidden">Cargando...</span></div> Actualizando...</td></tr>';
+    loadLocationHistory();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initMap();
+    loadLocationHistory();
+});
+
+// Datos para el gráfico
+const sensorData = {
+    timestamps: [{% for data in recent_data %}"{{ data.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}"{{ "," if not loop.last }}{% endfor %}],
+    cpu: [{% for data in recent_data %}{{ data.cpu_usage }}{{ "," if not loop.last }}{% endfor %}],
+    memory: [{% for data in recent_data %}{{ data.memory_usage }}{{ "," if not loop.last }}{% endfor %}],
+    network: [{% for data in recent_data %}{{ data.network_latency or 0 }}{{ "," if not loop.last }}{% endfor %}]
+};
+
+// Configuración del gráfico
+const ctx = document.getElementById('sensorChart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: sensorData.timestamps,
+        datasets: [{
+            label: 'CPU (%)',
+            data: sensorData.cpu,
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1
+        }, {
+            label: 'Memoria (%)',
+            data: sensorData.memory,
+            borderColor: 'rgb(54, 162, 235)',
+            tension: 0.1
+        }, {
+            label: 'Latencia (ms)',
+            data: sensorData.network,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Función para actualizar el gráfico
+function updateChart() {
+    fetch(`/kiosk/api/sensor-data/${kiosk.id}`)
         .then(response => response.json())
         .then(data => {
-            data.forEach(kiosk => {
-                if (kiosk.id !== {{ kiosk.id }}) {
-                    L.marker([kiosk.latitude, kiosk.longitude])
-                        .addTo(map)
-                        .bindPopup(kiosk.name);
-                }
-            });
-        });
-    {% endif %}
-
-    // Datos para el gráfico
-    const sensorData = {
-        timestamps: [{% for data in recent_data %}"{{ data.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}"{{ "," if not loop.last }}{% endfor %}],
-        cpu: [{% for data in recent_data %}{{ data.cpu_usage }}{{ "," if not loop.last }}{% endfor %}],
-        memory: [{% for data in recent_data %}{{ data.memory_usage }}{{ "," if not loop.last }}{% endfor %}],
-        network: [{% for data in recent_data %}{{ data.network_latency or 0 }}{{ "," if not loop.last }}{% endfor %}]
-    };
-
-    // Configuración del gráfico
-    const ctx = document.getElementById('sensorChart').getContext('2d');
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: sensorData.timestamps,
-            datasets: [{
-                label: 'CPU (%)',
-                data: sensorData.cpu,
-                borderColor: 'rgb(255, 99, 132)',
-                tension: 0.1
-            }, {
-                label: 'Memoria (%)',
-                data: sensorData.memory,
-                borderColor: 'rgb(54, 162, 235)',
-                tension: 0.1
-            }, {
-                label: 'Latencia (ms)',
-                data: sensorData.network,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Función para actualizar el gráfico
-    function updateChart() {
-        fetch(`/kiosk/api/sensor-data/${kiosk.id}`)
-            .then(response => response.json())
-            .then(data => {
-                chart.data.labels = data.timestamps;
-                chart.data.datasets[0].data = data.cpu;
-                chart.data.datasets[1].data = data.memory;
-                chart.data.datasets[2].data = data.network;
-                chart.update();
-            });
-    }
-
-    // Actualizar cada 30 segundos
-    setInterval(updateChart, 30000);
-
-    // Conexión WebSocket
-    const socket = io();
-    let chart;  // Variable global para el gráfico
-
-    // Manejo de eventos de conexión
-    socket.on('connect', () => {
-        console.log('Conectado al servidor WebSocket');
-        showConnectionStatus(true);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Desconectado del servidor WebSocket');
-        showConnectionStatus(false);
-    });
-
-    // Función para mostrar estado de conexión
-    function showConnectionStatus(connected) {
-        const statusDiv = document.getElementById('connection-status');
-        if (connected) {
-            statusDiv.innerHTML = '<span class="badge bg-success">Conectado</span>';
-        } else {
-            statusDiv.innerHTML = '<span class="badge bg-danger">Desconectado</span>';
-        }
-    }
-
-    // Escuchar actualizaciones de métricas
-    socket.on('metrics_update', (data) => {
-        if (data.kiosk_id === {{ kiosk.id }}) {
-            updateMetrics(data);
-        }
-    });
-
-    // Escuchar alertas
-    socket.on('new_alert', (data) => {
-        if (data.kiosk_id === {{ kiosk.id }}) {
-            showAlert(data);
-        }
-    });
-
-    // Escuchar anomalías
-    socket.on('new_anomaly', (data) => {
-        if (data.kiosk_id === {{ kiosk.id }}) {
-            showAnomaly(data);
-        }
-    });
-
-    // Función para actualizar métricas en tiempo real
-    function updateMetrics(data) {
-        // Actualizar indicadores de salud
-        document.getElementById('health-score').style.width = `${data.health_score}%`;
-        document.getElementById('health-score').textContent = `${data.health_score.toFixed(1)}%`;
-        
-        // Actualizar probabilidad de anomalía
-        document.getElementById('anomaly-prob').textContent = 
-            `${(data.anomaly_probability * 100).toFixed(2)}%`;
-            
-        // Actualizar gráfico si existe
-        if (chart) {
-            const timestamp = new Date(data.timestamp).toLocaleTimeString();
-            
-            chart.data.labels.push(timestamp);
-            chart.data.datasets[0].data.push(data.cpu_usage);
-            chart.data.datasets[1].data.push(data.memory_usage);
-            chart.data.datasets[2].data.push(data.network_latency);
-            
-            // Mantener solo los últimos 20 puntos
-            if (chart.data.labels.length > 20) {
-                chart.data.labels.shift();
-                chart.data.datasets.forEach(dataset => dataset.data.shift());
-            }
-            
+            chart.data.labels = data.timestamps;
+            chart.data.datasets[0].data = data.cpu;
+            chart.data.datasets[1].data = data.memory;
+            chart.data.datasets[2].data = data.network;
             chart.update();
-        }
-    }
+        });
+}
 
-    // Función para mostrar alertas
-    function showAlert(data) {
-        const alertsContainer = document.getElementById('alerts-container');
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-warning alert-dismissible fade show';
-        alert.innerHTML = `
-            <strong>${data.timestamp}</strong>: ${data.message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        alertsContainer.prepend(alert);
+// Actualizar cada 30 segundos
+setInterval(updateChart, 30000);
+
+// Función para mostrar estado de conexión
+function showConnectionStatus(connected) {
+    const statusDiv = document.getElementById('connection-status');
+    if (connected) {
+        statusDiv.innerHTML = '<span class="badge bg-success">Conectado</span>';
+    } else {
+        statusDiv.innerHTML = '<span class="badge bg-danger">Desconectado</span>';
+    }
+}
+
+// Función para actualizar métricas en tiempo real
+function updateMetrics(data) {
+    // Actualizar indicadores de salud
+    document.getElementById('health-score').style.width = `${data.health_score}%`;
+    document.getElementById('health-score').textContent = `${data.health_score.toFixed(1)}%`;
+    
+    // Actualizar probabilidad de anomalía
+    document.getElementById('anomaly-prob').textContent = 
+        `${(data.anomaly_probability * 100).toFixed(2)}%`;
         
-        // Eliminar alertas antiguas si hay más de 5
-        const alerts = alertsContainer.getElementsByClassName('alert');
-        if (alerts.length > 5) {
-            alertsContainer.removeChild(alerts[alerts.length - 1]);
-        }
-    }
-
-    // Función para mostrar anomalías
-    function showAnomaly(data) {
-        const anomalyContainer = document.getElementById('anomaly-container');
-        const anomaly = document.createElement('div');
-        anomaly.className = 'alert alert-danger mb-2';
-        anomaly.innerHTML = `
-            <h5 class="alert-heading">¡Anomalía Detectada!</h5>
-            <p>Probabilidad: ${(data.probability * 100).toFixed(2)}%</p>
-            <hr>
-            <p class="mb-0">Métricas Anómalas:</p>
-            <ul>
-                ${Object.entries(data.metrics).map(([key, value]) => 
-                    `<li>${key}: ${value}</li>`
-                ).join('')}
-            </ul>
-        `;
-        anomalyContainer.prepend(anomaly);
+    // Actualizar gráfico si existe
+    if (sensorChart) {
+        const timestamp = new Date(data.timestamp).toLocaleTimeString();
         
-        // Eliminar anomalías antiguas si hay más de 3
-        const anomalies = anomalyContainer.getElementsByClassName('alert');
-        if (anomalies.length > 3) {
-            anomalyContainer.removeChild(anomalies[anomalies.length - 1]);
+        sensorChart.data.labels.push(timestamp);
+        sensorChart.data.datasets[0].data.push(data.cpu_usage);
+        sensorChart.data.datasets[1].data.push(data.memory_usage);
+        sensorChart.data.datasets[2].data.push(data.network_latency);
+        
+        // Mantener solo los últimos 20 puntos
+        if (sensorChart.data.labels.length > 20) {
+            sensorChart.data.labels.shift();
+            sensorChart.data.datasets.forEach(dataset => dataset.data.shift());
         }
+        
+        sensorChart.update();
     }
+}
 
-    // Inicializar gráfico con datos históricos
-    const ctx = document.getElementById('sensorChart').getContext('2d');
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'CPU (%)',
-                data: [],
-                borderColor: 'rgb(255, 99, 132)',
-                tension: 0.1
-            }, {
-                label: 'Memoria (%)',
-                data: [],
-                borderColor: 'rgb(54, 162, 235)',
-                tension: 0.1
-            }, {
-                label: 'Latencia (ms)',
-                data: [],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            },
-            animation: {
-                duration: 0
-            }
-        }
-    });
+// Función para mostrar alertas
+function showAlert(data) {
+    const alertsContainer = document.getElementById('alerts-container');
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-warning alert-dismissible fade show';
+    alert.innerHTML = `
+        <strong>${data.timestamp}</strong>: ${data.message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    alertsContainer.prepend(alert);
+    
+    // Eliminar alertas antiguas si hay más de 5
+    const alerts = alertsContainer.getElementsByClassName('alert');
+    if (alerts.length > 5) {
+        alertsContainer.removeChild(alerts[alerts.length - 1]);
+    }
+}
+
+// Función para mostrar anomalías
+function showAnomaly(data) {
+    const anomalyContainer = document.getElementById('anomaly-container');
+    const anomaly = document.createElement('div');
+    anomaly.className = 'alert alert-danger mb-2';
+    anomaly.innerHTML = `
+        <h5 class="alert-heading">¡Anomalía Detectada!</h5>
+        <p>Probabilidad: ${(data.probability * 100).toFixed(2)}%</p>
+        <hr>
+        <p class="mb-0">Métricas Anómalas:</p>
+        <ul>
+            ${Object.entries(data.metrics).map(([key, value]) => 
+                `<li>${key}: ${value}</li>`
+            ).join('')}
+        </ul>
+    `;
+    anomalyContainer.prepend(anomaly);
+    
+    // Eliminar anomalías antiguas si hay más de 3
+    const anomalies = anomalyContainer.getElementsByClassName('alert');
+    if (anomalies.length > 3) {
+        anomalyContainer.removeChild(anomalies[anomalies.length - 1]);
+    }
+}
 </script>
 {% endblock %} 

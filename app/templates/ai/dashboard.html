@@ -14,44 +14,44 @@
 <div class="dashboard-container">
     <!-- Header -->
     <div class="dashboard-header">
-        <h1>Dashboard de Inteligencia Artificial</h1>
-        <div class="connection-status">
+        <h1 title="Panel principal que muestra métricas y análisis de IA del sistema">Dashboard de Inteligencia Artificial</h1>
+        <div class="connection-status" title="Estado actual de la conexión con el servidor">
             Estado: <span id="connectionStatus" class="status-disconnected">Desconectado</span>
         </div>
         <div class="dashboard-controls">
-            <select id="modelVersion" class="form-select">
+            <select id="modelVersion" class="form-select" title="Selecciona la versión del modelo de IA a analizar">
                 {% for version in model_versions %}
                 <option value="{{ version }}">Versión {{ version }}</option>
                 {% endfor %}
             </select>
-            <div class="date-range">
+            <div class="date-range" title="Selecciona el rango de fechas para el análisis">
                 <input type="date" id="startDate" class="form-control">
                 <input type="date" id="endDate" class="form-control">
             </div>
-            <button id="refreshData" class="btn btn-primary">Actualizar</button>
+            <button id="refreshData" class="btn btn-primary" title="Actualiza los datos con los filtros seleccionados">Actualizar</button>
         </div>
     </div>
 
     <!-- Sección en Tiempo Real -->
     <div class="realtime-section">
-        <h2>Monitoreo en Tiempo Real</h2>
+        <h2 title="Visualización de predicciones y anomalías en tiempo real">Monitoreo en Tiempo Real</h2>
         <div class="realtime-grid">
             <div class="realtime-metrics">
-                <div class="realtime-metric-card">
+                <div class="realtime-metric-card" title="Número total de predicciones realizadas por el modelo">
                     <h3>Predicciones Totales</h3>
                     <div class="metric-value" id="totalPredictions">0</div>
                 </div>
-                <div class="realtime-metric-card">
+                <div class="realtime-metric-card" title="Cantidad de anomalías detectadas por el sistema">
                     <h3>Anomalías Detectadas</h3>
                     <div class="metric-value" id="totalAnomalies">0</div>
                 </div>
-                <div class="realtime-metric-card">
+                <div class="realtime-metric-card" title="Porcentaje de predicciones clasificadas como anomalías">
                     <h3>Tasa de Anomalías</h3>
                     <div class="metric-value" id="anomalyRate">0.00%</div>
                 </div>
             </div>
             <div class="realtime-predictions">
-                <h3>Últimas Predicciones</h3>
+                <h3 title="Lista de las predicciones más recientes realizadas por el modelo">Últimas Predicciones</h3>
                 <div id="realtimePredictions" class="predictions-list">
                     <!-- Las predicciones se agregarán dinámicamente aquí -->
                 </div>
@@ -61,7 +61,7 @@
 
     <!-- Métricas Principales -->
     <div class="metrics-grid">
-        <div class="metric-card">
+        <div class="metric-card" title="Porcentaje general de predicciones correctas del modelo">
             <h3>Precisión General</h3>
             <div class="metric-value" id="overallAccuracy">{{ (metrics.accuracy * 100)|round(2) if metrics.accuracy is defined else '0.00' }}%</div>
             <div class="metric-trend">
@@ -69,17 +69,17 @@
                 <span class="trend-value">{{ metrics.accuracy_trend|default('0.00') }}%</span>
             </div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" title="Área bajo la curva ROC - Mide la capacidad de discriminación del modelo">
             <h3>ROC AUC</h3>
             <div class="metric-value" id="rocAuc">{{ metrics.roc_auc|round(3) if metrics.roc_auc is defined else '0.000' }}</div>
             <canvas id="rocCurve"></canvas>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" title="Área bajo la curva Precisión-Recall - Balance entre precisión y exhaustividad">
             <h3>PR AUC</h3>
             <div class="metric-value" id="prAuc">{{ metrics.pr_auc|round(3) if metrics.pr_auc is defined else '0.000' }}</div>
             <canvas id="prCurve"></canvas>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" title="Nivel promedio de confianza en las predicciones del modelo">
             <h3>Confianza Media</h3>
             <div class="metric-value" id="meanConfidence">{{ (metrics.mean_confidence * 100)|round(2) if metrics.mean_confidence is defined else '0.00' }}%</div>
             <div id="confidenceDistribution"></div>
@@ -88,24 +88,24 @@
 
     <!-- Análisis de Drift -->
     <div class="drift-section">
-        <h2>Análisis de Drift</h2>
+        <h2 title="Análisis de cambios en la distribución de datos y rendimiento del modelo">Análisis de Drift</h2>
         <div class="drift-grid">
-            <div class="drift-card">
+            <div class="drift-card" title="Distribución de las predicciones a lo largo del tiempo">
                 <h3>Distribución de Predicciones</h3>
                 <canvas id="distributionChart"></canvas>
                 <div class="drift-score">
                     KL Divergence: <span id="klDivergence">{{ drift.kl_divergence|round(4) if drift.kl_divergence is defined else '0.0000' }}</span>
                 </div>
             </div>
-            <div class="drift-card">
+            <div class="drift-card" title="Cambios en las características del modelo">
                 <h3>Drift de Características</h3>
                 <div id="featureDriftHeatmap"></div>
             </div>
-            <div class="drift-card">
+            <div class="drift-card" title="Evolución del rendimiento del modelo en el tiempo">
                 <h3>Tendencia de Rendimiento</h3>
                 <canvas id="performanceTrendChart"></canvas>
             </div>
-            <div class="drift-card">
+            <div class="drift-card" title="Alertas sobre cambios significativos en el comportamiento del modelo">
                 <h3>Alertas de Drift</h3>
                 <div class="drift-alerts">
                     {% if drift.alerts %}
@@ -124,7 +124,7 @@
 
     <!-- Matriz de Confusión -->
     <div class="confusion-section">
-        <h2>Matriz de Confusión</h2>
+        <h2 title="Visualización de verdaderos/falsos positivos y negativos">Matriz de Confusión</h2>
         <div id="confusionMatrix"></div>
         <div class="class-metrics">
             {% if class_metrics %}
@@ -153,12 +153,12 @@
 
     <!-- Calibración del Modelo -->
     <div class="calibration-section">
-        <h2>Calibración del Modelo</h2>
+        <h2 title="Evaluación de qué tan bien ajustadas están las probabilidades predichas por el modelo">Calibración del Modelo</h2>
         <div class="calibration-grid">
-            <div class="calibration-chart">
+            <div class="calibration-chart" title="Curva que muestra la relación entre probabilidades predichas y frecuencias observadas">
                 <canvas id="calibrationCurve"></canvas>
             </div>
-            <div class="reliability-diagram">
+            <div class="reliability-diagram" title="Diagrama que muestra la fiabilidad de las predicciones del modelo">
                 <canvas id="reliabilityDiagram"></canvas>
             </div>
         </div>
@@ -166,27 +166,27 @@
 
     <!-- Análisis de Errores -->
     <div class="errors-section">
-        <h2>Análisis de Errores</h2>
+        <h2 title="Análisis detallado de los errores y fallos del modelo">Análisis de Errores</h2>
         <div class="errors-grid">
             <div class="error-card">
-                <h3>Distribución de Errores</h3>
+                <h3 title="Gráfico que muestra cómo se distribuyen los errores en diferentes rangos">Distribución de Errores</h3>
                 <canvas id="errorDistribution"></canvas>
             </div>
             <div class="error-card">
-                <h3>Errores por Confianza</h3>
+                <h3 title="Relación entre el nivel de confianza del modelo y sus errores">Errores por Confianza</h3>
                 <canvas id="errorsByConfidence"></canvas>
             </div>
             <div class="error-card">
-                <h3>Casos Más Problemáticos</h3>
+                <h3 title="Lista de los casos donde el modelo tuvo los errores más significativos">Casos Más Problemáticos</h3>
                 <div class="error-cases-table">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Predicción</th>
-                                <th>Real</th>
-                                <th>Confianza</th>
-                                <th>Error</th>
+                                <th title="Identificador único del caso">ID</th>
+                                <th title="Valor predicho por el modelo">Predicción</th>
+                                <th title="Valor real observado">Real</th>
+                                <th title="Nivel de confianza del modelo en su predicción">Confianza</th>
+                                <th title="Diferencia porcentual entre predicción y valor real">Error</th>
                             </tr>
                         </thead>
                         <tbody id="errorCases">

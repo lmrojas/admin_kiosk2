@@ -1,0 +1,23 @@
+{
+    "serial": "d69ae9ec-1f3e-4e59-a971-32352117c27b",
+    "name": "k0003",
+    "location": "alto palermo, buenos aires, argentina",
+    "status": "inactive",
+    "coordinates": {
+        "assigned": {
+            "latitude": -34.58794805,
+            "longitude": -58.4101270242914
+        },
+        "reported": {
+            "latitude": null,
+            "longitude": null
+        }
+    },
+    "hardware": {
+        "cpu_model": null,
+        "ram_total": null,
+        "storage_total": null,
+        "ip_address": null,
+        "mac_address": null
+    }
+}
