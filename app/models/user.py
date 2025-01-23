@@ -1,52 +1,57 @@
 # EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
 # SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
 
-from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.dialects.postgresql import JSON
 from enum import Enum
 from datetime import datetime
+from app.models.base import db
+from app import login_manager
+from sqlalchemy.dialects.postgresql import JSON
 
-class UserRole(str, Enum):
-    """Roles de usuario disponibles."""
+class UserRole(Enum):
+    """Roles de usuario."""
     ADMIN = 'admin'
-    MANAGER = 'manager'
     OPERATOR = 'operator'
     VIEWER = 'viewer'
 
-class UserPermission(str, Enum):
-    """Permisos disponibles en el sistema."""
-    MANAGE_USERS = 'manage_users'
-    MANAGE_KIOSKS = 'manage_kiosks'
-    VIEW_DASHBOARD = 'view_dashboard'
-    VIEW_LOGS = 'view_logs'
-    MANAGE_BACKUPS = 'manage_backups'
-    MANAGE_SETTINGS = 'manage_settings'
-    UPDATE_KIOSK = 'update_kiosk'
+class UserPermission(Enum):
+    """Permisos de usuario."""
     VIEW_KIOSK = 'view_kiosk'
     CREATE_KIOSK = 'create_kiosk'
+    UPDATE_KIOSK = 'update_kiosk'
     DELETE_KIOSK = 'delete_kiosk'
+    VIEW_METRICS = 'view_metrics'
+    VIEW_ALERTS = 'view_alerts'
+    MANAGE_USERS = 'manage_users'
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Carga un usuario por su ID."""
+    return User.query.get(int(user_id))
 
 class User(db.Model, UserMixin):
-    """Modelo de usuario con soporte para autenticación de dos factores."""
+    """Modelo de usuario.
+    Sigue el patrón MVT + S.
+    """
     
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
+    username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255))
     role_name = db.Column(db.String(20), nullable=False, default=UserRole.VIEWER.value)
     
     # Campos para 2FA
     two_factor_enabled = db.Column(db.Boolean, default=False)
     two_factor_secret = db.Column(db.String(32))
-    backup_codes = db.Column(JSON)  # Lista de códigos de respaldo
+    backup_codes = db.Column(db.JSON)  # Lista de códigos de respaldo
     temp_2fa_code = db.Column(JSON)  # Código temporal y fecha de expiración
     
     # Campos de estado y auditoría
     is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     failed_login_attempts = db.Column(db.Integer, default=0)
     account_locked = db.Column(db.Boolean, default=False)
@@ -67,25 +72,19 @@ class User(db.Model, UserMixin):
         return self.role_name == role_name
 
     def has_permission(self, permission):
-        """Verifica si el usuario tiene un permiso específico basado en su rol."""
+        """Verifica si el usuario tiene un permiso específico."""
         role_permissions = {
             UserRole.ADMIN.value: [p.value for p in UserPermission],
-            UserRole.MANAGER.value: [
-                UserPermission.MANAGE_KIOSKS.value,
-                UserPermission.VIEW_DASHBOARD.value,
-                UserPermission.VIEW_LOGS.value,
-                UserPermission.UPDATE_KIOSK.value,
-                UserPermission.VIEW_KIOSK.value,
-                UserPermission.DELETE_KIOSK.value
-            ],
             UserRole.OPERATOR.value: [
                 UserPermission.UPDATE_KIOSK.value,
                 UserPermission.VIEW_KIOSK.value,
-                UserPermission.VIEW_DASHBOARD.value
+                UserPermission.VIEW_METRICS.value,
+                UserPermission.VIEW_ALERTS.value
             ],
             UserRole.VIEWER.value: [
                 UserPermission.VIEW_KIOSK.value,
-                UserPermission.VIEW_DASHBOARD.value
+                UserPermission.VIEW_METRICS.value,
+                UserPermission.VIEW_ALERTS.value
             ]
         }
         return permission in role_permissions.get(self.role_name, [])

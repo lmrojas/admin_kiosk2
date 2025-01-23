@@ -6,18 +6,191 @@ from app.models.user import User, UserRole
 from email_validator import validate_email, EmailNotValidError
 from config.logging_config import LoggingConfig
 import logging
+from functools import wraps
+from flask import abort, flash, redirect, url_for, request, jsonify, g
+from flask_login import current_user
+from app.services.security_service import SecurityService
+from typing import Union, List, Optional
 
 # Registrar user_loader a nivel de módulo
 @login_manager.user_loader
 def load_user(user_id):
+    """Carga un usuario por su ID para Flask-Login"""
     try:
         return User.query.get(int(user_id))
     except Exception as e:
         LoggingConfig.log_system_error('User Loading', str(e))
         return None
 
+logger = logging.getLogger(__name__)
+security_service = SecurityService()
+
+# Exponer decorador a nivel de módulo
+def admin_required(f):
+    """Decorador que verifica que el usuario sea administrador."""
+    return AuthService.admin_required(f)
+
 class AuthService:
-    """Servicio de autenticación y gestión de usuarios"""
+    """Servicio para manejar autenticación y autorización."""
+    
+    @staticmethod
+    def jwt_required(f):
+        """Decorador que verifica que exista un JWT válido."""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                return jsonify({'error': 'Token no proporcionado'}), 401
+            
+            token = auth_header.split(' ')[1]
+            payload = security_service.verify_jwt(token)
+            
+            if not payload:
+                return jsonify({'error': 'Token inválido o expirado'}), 401
+            
+            return f(*args, **kwargs)
+        return decorated_function
+
+    @staticmethod
+    def permission_required(permissions: Union[str, List[str]], require_all: bool = False):
+        """
+        Decorador para verificar permisos de usuario.
+        
+        Args:
+            permissions: Permiso o lista de permisos requeridos
+            require_all: Si es True, requiere todos los permisos. Si es False, requiere al menos uno
+        """
+        if isinstance(permissions, str):
+            permissions = [permissions]
+            
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                if not current_user.is_authenticated:
+                    if request.is_json:
+                        return jsonify({'error': 'Autenticación requerida'}), 401
+                    flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+                    return redirect(url_for('auth.login'))
+                
+                if require_all:
+                    has_permissions = all(current_user.has_permission(p) for p in permissions)
+                else:
+                    has_permissions = any(current_user.has_permission(p) for p in permissions)
+                
+                if not has_permissions:
+                    if request.is_json:
+                        return jsonify({'error': 'Permisos insuficientes'}), 403
+                    flash('No tienes los permisos necesarios para acceder a esta página.', 'danger')
+                    return abort(403)
+                
+                return f(*args, **kwargs)
+            return decorated_function
+        return decorator
+
+    @staticmethod
+    def role_required(roles: Union[str, List[str]], require_all: bool = False):
+        """
+        Decorador para verificar rol de usuario.
+        
+        Args:
+            roles: Rol o lista de roles requeridos
+            require_all: Si es True, requiere todos los roles. Si es False, requiere al menos uno
+        """
+        if isinstance(roles, str):
+            roles = [roles]
+            
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                if not current_user.is_authenticated:
+                    if request.is_json:
+                        return jsonify({'error': 'Autenticación requerida'}), 401
+                    flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+                    return redirect(url_for('auth.login'))
+                
+                if require_all:
+                    has_roles = all(current_user.has_role(r) for r in roles)
+                else:
+                    has_roles = any(current_user.has_role(r) for r in roles)
+                
+                if not has_roles:
+                    if request.is_json:
+                        return jsonify({'error': 'Rol insuficiente'}), 403
+                    flash('No tienes el rol necesario para acceder a esta página.', 'danger')
+                    return abort(403)
+                
+                return f(*args, **kwargs)
+            return decorated_function
+        return decorator
+
+    @staticmethod
+    def admin_required(f):
+        """Decorador que verifica que el usuario sea administrador."""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                if request.is_json:
+                    return jsonify({'error': 'Autenticación requerida'}), 401
+                flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+                return redirect(url_for('auth.login'))
+            
+            if not current_user.has_role(UserRole.ADMIN.value):
+                if request.is_json:
+                    return jsonify({'error': 'Se requiere rol de administrador'}), 403
+                flash('Se requiere rol de administrador para acceder a esta página.', 'danger')
+                return abort(403)
+            
+            return f(*args, **kwargs)
+        return decorated_function
+
+    @staticmethod
+    def audit_action(action: str, resource: Optional[str] = None):
+        """
+        Decorador para registrar acciones en el log de auditoría.
+        
+        Args:
+            action: Tipo de acción realizada
+            resource: Recurso afectado (opcional, se puede inferir de la ruta)
+        """
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                try:
+                    result = f(*args, **kwargs)
+                    
+                    # Registrar la acción exitosa
+                    security_service.audit_log(
+                        user_id=getattr(current_user, 'id', None),
+                        action=action,
+                        resource=resource or request.endpoint,
+                        details={
+                            'method': request.method,
+                            'path': request.path,
+                            'args': kwargs,
+                            'status': 'success'
+                        }
+                    )
+                    
+                    return result
+                    
+                except Exception as e:
+                    # Registrar la acción fallida
+                    security_service.audit_log(
+                        user_id=getattr(current_user, 'id', None),
+                        action=action,
+                        resource=resource or request.endpoint,
+                        details={
+                            'method': request.method,
+                            'path': request.path,
+                            'args': kwargs,
+                            'status': 'error',
+                            'error': str(e)
+                        }
+                    )
+                    raise
+                    
+            return decorated_function
+        return decorator
 
     def __init__(self):
         """Inicializar servicio"""
@@ -93,35 +266,128 @@ class AuthService:
             raise
 
     @staticmethod
-    def authenticate(username, password):
+    def process_login(username: str, password: str, code_2fa: str = None) -> dict:
         """
-        Autenticar usuario
+        Procesa el intento de login completo incluyendo 2FA.
+        Unifica la autenticación y verificación 2FA en un solo método.
         
         Args:
-            username (str): Nombre de usuario
-            password (str): Contraseña
-        
+            username: Nombre de usuario
+            password: Contraseña
+            code_2fa: Código 2FA (opcional)
+            
         Returns:
-            User or None: Usuario autenticado o None si las credenciales son inválidas
+            dict: Resultado del proceso con claves:
+                - success: bool
+                - user: User object (si success es True)
+                - user_id: int (si needs_2fa es True)
+                - needs_2fa: bool
+                - error: str (si hay error)
         """
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
+        try:
+            # Buscar usuario y verificar contraseña
+            user = User.query.filter_by(username=username).first()
+            if not user or not user.check_password(password):
+                LoggingConfig.log_auth_event('login', username, success=False)
+                return {'success': False, 'error': 'Credenciales inválidas'}
+
             if not user.is_active:
                 LoggingConfig.log_auth_event('login', username, success=False)
-                return None
+                return {'success': False, 'error': 'Usuario inactivo'}
             
-            # Actualizar última fecha de inicio de sesión
+            # Verificar 2FA si está habilitado
+            if user.two_factor_enabled:
+                if not code_2fa:
+                    return {
+                        'success': False,
+                        'needs_2fa': True,
+                        'user_id': user.id
+                    }
+                
+                if not two_factor_service.verify_code(user, code_2fa):
+                    return {'success': False, 'error': 'Código 2FA inválido'}
+            
+            # Actualizar última fecha de login
             user.update_last_login()
-            
-            # Registrar evento de inicio de sesión exitoso
             LoggingConfig.log_auth_event('login', username)
+            return {'success': True, 'user': user}
             
-            return user
-        else:
-            # Registrar intento de inicio de sesión fallido
-            LoggingConfig.log_auth_event('login', username, success=False)
-            return None
+        except Exception as e:
+            LoggingConfig.log_system_error('Login Process', str(e))
+            return {'success': False, 'error': 'Error en el proceso de login'}
+
+    @staticmethod
+    def verify_auth(user_id: int, code: str, verification_type: str = '2fa') -> dict:
+        """
+        Verifica la autenticación usando diferentes métodos.
+        Unifica todas las verificaciones en un solo método.
+        
+        Args:
+            user_id: ID del usuario
+            code: Código a verificar
+            verification_type: Tipo de verificación ('2fa', 'backup', 'temp')
+            
+        Returns:
+            dict: Resultado del proceso con claves:
+                - success: bool
+                - user: User object (si success es True)
+                - error: str (si hay error)
+        """
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                return {'success': False, 'error': 'Usuario no encontrado'}
+            
+            # Verificar según el tipo
+            if verification_type == '2fa':
+                success = two_factor_service.verify_code(user, code)
+                event = '2fa_verify'
+            elif verification_type == 'backup':
+                success = two_factor_service.verify_backup_code(user, code)
+                event = 'backup_verify'
+            elif verification_type == 'temp':
+                success = two_factor_service.verify_temp_code(user, code)
+                event = 'temp_verify'
+            else:
+                return {'success': False, 'error': 'Tipo de verificación inválido'}
+            
+            if success:
+                LoggingConfig.log_auth_event(event, user.username)
+                return {'success': True, 'user': user}
+            
+            return {'success': False, 'error': 'Código inválido'}
+            
+        except Exception as e:
+            LoggingConfig.log_system_error('Auth Verification', str(e))
+            return {'success': False, 'error': 'Error en la verificación'}
+
+    @staticmethod
+    def process_registration(username: str, email: str, password: str) -> dict:
+        """
+        Procesa el registro completo de un usuario.
+        
+        Args:
+            username: Nombre de usuario
+            email: Correo electrónico
+            password: Contraseña
+            
+        Returns:
+            dict: Resultado del proceso con claves:
+                - success: bool
+                - error: str (si hay error)
+        """
+        try:
+            user = AuthService.register_user(username, email, password)
+            if user:
+                LoggingConfig.log_auth_event('registro', username)
+                return {'success': True}
+            return {'success': False, 'error': 'Error al registrar usuario'}
+        except ValueError as e:
+            LoggingConfig.log_system_error('Registration Process', str(e))
+            return {'success': False, 'error': str(e)}
+        except Exception as e:
+            LoggingConfig.log_system_error('Registration Process', str(e))
+            return {'success': False, 'error': 'Error en el proceso de registro'}
 
     @staticmethod
     def change_password(user, old_password, new_password):
@@ -209,4 +475,6 @@ class AuthService:
         except Exception as e:
             db.session.rollback()
             LoggingConfig.log_system_error('User Activation', str(e))
-            raise 
+            raise
+
+auth_service = AuthService() 

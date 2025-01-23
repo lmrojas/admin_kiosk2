@@ -1,10 +1,10 @@
 """
 Modelos para el sistema de IA de Admin Kiosk.
-Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
+Sigue el patrón MVT + S.
 """
 
 from datetime import datetime
-from app import db
+from app.models.base import db
 from sqlalchemy.dialects.postgresql import JSON
 
 class ModelMetrics(db.Model):

@@ -35,8 +35,119 @@
         <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Con Anomalías</h5>
+                    <h5 class="card-title">Anomalías IA</h5>
                     <h2 class="card-text" id="anomaly-kiosks">{{ kiosks_with_anomalies }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas de IA -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Predicciones de Anomalías</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="predictions-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Confianza del Modelo</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="confidence-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado del Modelo IA -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">Estado del Modelo</h5>
+                    <span class="badge bg-success" id="model-status">Activo</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Versión:</th>
+                                    <td id="model-version">{{ model_version }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Tiempo Promedio de Predicción:</th>
+                                    <td id="avg-prediction-time">{{ avg_prediction_time }}ms</td>
+                                </tr>
+                                <tr>
+                                    <th>Tasa de Aciertos:</th>
+                                    <td id="accuracy-rate">{{ accuracy_rate }}%</td>
+                                </tr>
+                                <tr>
+                                    <th>Umbral de Anomalía:</th>
+                                    <td id="anomaly-threshold">{{ anomaly_threshold }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Entrenamiento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="training-status mb-3">
+                        <h6>Estado del Entrenamiento</h6>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" id="training-progress" 
+                                 style="width: {{ training_progress }}%">
+                                {{ training_progress }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="training-metrics">
+                        <h6>Métricas de Entrenamiento</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th>Loss:</th>
+                                        <td id="training-loss">{{ training_loss }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Épocas:</th>
+                                        <td id="training-epochs">{{ current_epoch }}/{{ total_epochs }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Batch Size:</th>
+                                        <td>{{ batch_size }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Learning Rate:</th>
+                                        <td>{{ learning_rate }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 mt-3">
+                        <button class="btn btn-primary" id="start-training" onclick="startTraining()">
+                            <i class="fas fa-play"></i> Iniciar Entrenamiento
+                        </button>
+                        <button class="btn btn-danger" id="stop-training" onclick="stopTraining()" disabled>
+                            <i class="fas fa-stop"></i> Detener Entrenamiento
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -161,6 +272,62 @@
         }
     );
 
+    const predictionsChart = new Chart(
+        document.getElementById('predictions-chart').getContext('2d'),
+        {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Predicciones Correctas',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Anomalías Detectadas',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        }
+    );
+
+    const confidenceChart = new Chart(
+        document.getElementById('confidence-chart').getContext('2d'),
+        {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Nivel de Confianza %',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        }
+    );
+
     // Conexión WebSocket
     const socket = io();
 
@@ -193,6 +360,66 @@
         }
         memoryChart.update();
     });
+
+    // Manejar actualizaciones de métricas de IA
+    socket.on('ai_metrics_update', function(data) {
+        const timestamp = new Date().toLocaleTimeString();
+        
+        // Actualizar gráfico de predicciones
+        predictionsChart.data.labels.push(timestamp);
+        predictionsChart.data.datasets[0].data.push(data.correct_predictions);
+        predictionsChart.data.datasets[1].data.push(data.anomalies_detected);
+        if (predictionsChart.data.labels.length > 20) {
+            predictionsChart.data.labels.shift();
+            predictionsChart.data.datasets[0].data.shift();
+            predictionsChart.data.datasets[1].data.shift();
+        }
+        predictionsChart.update();
+
+        // Actualizar gráfico de confianza
+        confidenceChart.data.labels.push(timestamp);
+        confidenceChart.data.datasets[0].data.push(data.confidence_level);
+        if (confidenceChart.data.labels.length > 20) {
+            confidenceChart.data.labels.shift();
+            confidenceChart.data.datasets[0].data.shift();
+        }
+        confidenceChart.update();
+
+        // Actualizar estado del modelo
+        document.getElementById('model-version').textContent = data.model_version;
+        document.getElementById('avg-prediction-time').textContent = data.avg_prediction_time + 'ms';
+        document.getElementById('accuracy-rate').textContent = data.accuracy_rate + '%';
+        document.getElementById('anomaly-threshold').textContent = data.anomaly_threshold;
+    });
+
+    // Manejar actualizaciones del entrenamiento
+    socket.on('training_update', function(data) {
+        // Actualizar progreso
+        const progressBar = document.getElementById('training-progress');
+        progressBar.style.width = data.progress + '%';
+        progressBar.textContent = data.progress + '%';
+
+        // Actualizar métricas
+        document.getElementById('training-loss').textContent = data.loss;
+        document.getElementById('training-epochs').textContent = `${data.current_epoch}/${data.total_epochs}`;
+
+        // Actualizar estado de botones
+        document.getElementById('start-training').disabled = data.is_training;
+        document.getElementById('stop-training').disabled = !data.is_training;
+    });
+
+    // Funciones de control de entrenamiento
+    function startTraining() {
+        socket.emit('start_training');
+        document.getElementById('start-training').disabled = true;
+        document.getElementById('stop-training').disabled = false;
+    }
+
+    function stopTraining() {
+        socket.emit('stop_training');
+        document.getElementById('start-training').disabled = false;
+        document.getElementById('stop-training').disabled = true;
+    }
 
     // Manejar nuevas alertas
     socket.on('new_alert', function(alert) {

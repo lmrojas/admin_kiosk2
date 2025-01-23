@@ -1,31 +1,13 @@
-# Kiosk App - Simulador de Kiosks
+# Kiosk App - Emulador de Kiosk
 
-Este módulo simula el comportamiento de kiosks reales, permitiendo probar diferentes escenarios y situaciones sin necesidad de hardware físico.
-
-## Estructura de Directorios
-
-```
-admin_kiosk_2/
-└── kiosk_app/
-    ├── db_sync.py
-    ├── kiosk_app.py
-    ├── anomaly_simulator.py
-    ├── kiosk_client.py
-    ├── kiosk_spawner.py
-    ├── README.md
-    └── kiosk_configs/        # Directorio de configuraciones
-        ├── <uuid1>.json
-        ├── <uuid2>.json
-        └── summary.json
-```
+Módulo para simular kiosks que envían datos de telemetría vía WebSocket.
 
 ## Instalación
 
-1. Crear un entorno virtual:
+1. Crear y activar entorno virtual:
 ```bash
 python -m venv venv
-.\venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
+source venv/Scripts/activate  # Windows
 ```
 
 2. Instalar dependencias:
@@ -35,82 +17,84 @@ pip install -r requirements.txt
 
 ## Uso
 
-### 1. Sincronizar con la Base de Datos
+El módulo consta de dos scripts principales:
 
-Ejecutar desde el directorio raíz del proyecto (admin_kiosk_2):
+### 1. kiosk_app.py
+Contiene la lógica base del kiosk para obtener datos del sistema y procesar comandos.
+
+### 2. kiosk_simulator_runner.py 
+Script principal para ejecutar la simulación. Este es el que debes ejecutar:
 
 ```bash
-python -m kiosk_app.db_sync
+python kiosk_app/kiosk_simulator_runner.py
 ```
 
-Esto creará el directorio `kiosk_app/kiosk_configs/` y generará los archivos de configuración para cada kiosk activo en la BD.
+El script:
+- Conecta con los kiosks registrados en el sistema central
+- Envía datos de telemetría cada 5 segundos incluyendo:
+  - Estado del sistema (OS, memoria, CPU)
+  - Métricas de red
+  - Datos de sensores
+  - Información de seguridad
+  - Geolocalización
+- Procesa comandos recibidos (restart, update, block/unblock)
 
-### 2. Iniciar Simulación
+## Datos Enviados
 
-#### a) Simular un Kiosk Individual
-```bash
-python -m kiosk_app.kiosk_client kiosk_app/kiosk_configs/<uuid>.json
+La telemetría incluye:
+
+- Identificación
+  - UUID del kiosk
+  - Nombre
+  - Datos de red (IP, MAC)
+
+- Estado del Sistema
+  - Nombre y versión del OS
+  - Uptime
+  - Estado actual
+  - Estado de Chromium
+  - Zona horaria local
+
+- Hardware
+  - Uso de CPU y temperatura
+  - Memoria
+  - Disco
+
+- Sensores
+  - Temperatura ambiente
+  - Humedad
+  - Voltaje
+  - Estado de puerta
+
+- Seguridad
+  - Últimos accesos no autorizados
+  - Razón de bloqueo
+
+- Geolocalización
+  - Latitud/Longitud
+  - Timestamp
+
+## Comandos Soportados
+
+- restart: Reinicia el kiosk
+- update: Actualiza el software
+- block: Bloquea el kiosk
+- unblock: Desbloquea el kiosk
+- check: Verifica estado actual
+
+## Notas Técnicas
+
+- La geolocalización se obtiene vía WiFi
+- Los datos de sensores son simulados con variaciones realistas
+- El estado se mantiene consistente entre reconexiones
+- Todos los timestamps incluyen zona horaria
+
+## Estructura
+
 ```
-Donde `<uuid>` es el identificador del kiosk que quieres simular.
-
-#### b) Simular Múltiples Kiosks
-```bash
-python -m kiosk_app.kiosk_spawner --config-dir kiosk_app/kiosk_configs
-```
-
-Este comando:
-1. Buscará el directorio `kiosk_configs` dentro del módulo kiosk_app
-2. Cargará todas las configuraciones encontradas
-3. Iniciará la simulación de todos los kiosks
-
-### 3. Comportamientos Simulados
-
-Los kiosks simulados:
-- Envían datos de telemetría cada 5 segundos (CPU, memoria, red, etc.)
-- Responden a comandos del servidor central
-- Pueden simular diferentes tipos de anomalías:
-  - Picos de CPU
-  - Fugas de memoria
-  - Latencia de red alta
-  - Deriva en la ubicación
-  - Pérdidas de conexión
-
-### 4. Comandos Disponibles
-
-El servidor puede enviar los siguientes comandos a los kiosks:
-
-- `status_update`: Actualiza el estado del kiosk
-- `get_telemetry`: Solicita datos de telemetría actuales
-- `start_anomaly`: Inicia una simulación de anomalía específica
-- `stop_anomaly`: Detiene una anomalía activa
-- `random_anomaly`: Inicia una anomalía aleatoria
-
-### 5. Variables de Entorno
-
-Crear un archivo `.env` con:
-```
-DB_NAME=admin_kiosk2
-DB_USER=postgres
-DB_PASSWORD=tu_contraseña
-DB_HOST=localhost
-DB_PORT=5432
-```
-
-## Ejemplos de Uso
-
-1. Iniciar un kiosk específico con servidor personalizado:
-```bash
-python -m kiosk_app.kiosk_client kiosk_app/kiosk_configs/abc123.json --server-url http://192.168.1.100:5000
-```
-
-2. Iniciar múltiples kiosks con configuración personalizada:
-```bash
-python -m kiosk_app.kiosk_spawner --config-dir custom_configs --server-url http://192.168.1.100:5000
-```
-
-## Notas
-
-- Los kiosks simulados intentarán reconectarse automáticamente si pierden conexión
-- Cada kiosk mantiene su propio estado y puede simular anomalías independientemente
-- Los datos de telemetría son generados con variaciones realistas
-- Las anomalías simuladas pueden ayudar a probar la detección de problemas en el sistema central 
+kiosk_app/
+├── kiosk_app.py           # Clase principal del kiosk
+├── kiosk_behavior_simulator.py  # Simulador de comportamiento
+├── requirements.txt       # Dependencias del módulo
+└── README.md             # Este archivo
+``` 

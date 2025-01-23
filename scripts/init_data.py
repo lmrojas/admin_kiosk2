@@ -43,14 +43,13 @@ def init_permissions():
     try:
         # Diccionario de permisos y sus descripciones
         permissions = {
-            UserPermission.MANAGE_USERS.value: "Gestionar usuarios",
-            UserPermission.MANAGE_KIOSKS.value: "Gestionar kiosks",
-            UserPermission.VIEW_DASHBOARD.value: "Ver dashboard",
-            UserPermission.VIEW_LOGS.value: "Ver logs del sistema",
-            UserPermission.MANAGE_BACKUPS.value: "Gestionar backups",
-            UserPermission.MANAGE_SETTINGS.value: "Gestionar configuración",
-            UserPermission.UPDATE_KIOSK.value: "Actualizar kiosk",
-            UserPermission.VIEW_KIOSK.value: "Ver lista de kiosks"
+            UserPermission.VIEW_KIOSK.value: "Ver kiosks",
+            UserPermission.CREATE_KIOSK.value: "Crear kiosks",
+            UserPermission.UPDATE_KIOSK.value: "Actualizar kiosks",
+            UserPermission.DELETE_KIOSK.value: "Eliminar kiosks",
+            UserPermission.VIEW_METRICS.value: "Ver métricas",
+            UserPermission.VIEW_ALERTS.value: "Ver alertas",
+            UserPermission.MANAGE_USERS.value: "Gestionar usuarios"
         }
         
         logger.info("Permisos inicializados correctamente")
@@ -66,21 +65,16 @@ def init_roles():
         # Definir permisos para cada rol
         role_permissions = {
             UserRole.ADMIN.value: [p.value for p in UserPermission],
-            UserRole.MANAGER.value: [
-                UserPermission.MANAGE_KIOSKS.value,
-                UserPermission.VIEW_DASHBOARD.value,
-                UserPermission.VIEW_LOGS.value,
-                UserPermission.UPDATE_KIOSK.value,
-                UserPermission.VIEW_KIOSK.value
-            ],
             UserRole.OPERATOR.value: [
                 UserPermission.UPDATE_KIOSK.value,
                 UserPermission.VIEW_KIOSK.value,
-                UserPermission.VIEW_DASHBOARD.value
+                UserPermission.VIEW_METRICS.value,
+                UserPermission.VIEW_ALERTS.value
             ],
             UserRole.VIEWER.value: [
                 UserPermission.VIEW_KIOSK.value,
-                UserPermission.VIEW_DASHBOARD.value
+                UserPermission.VIEW_METRICS.value,
+                UserPermission.VIEW_ALERTS.value
             ]
         }
         
@@ -107,7 +101,7 @@ def init_admin_user():
             role_name=UserRole.ADMIN.value,
             is_active=True
         )
-        admin.password_hash = generate_password_hash('admin123')
+        admin.set_password('admin123')
         
         db.session.add(admin)
         db.session.commit()

@@ -310,7 +310,7 @@ function centerMap() {
 {% endif %}
 
 function loadLocationHistory() {
-    fetch('/kiosk/api/kiosk/{{ kiosk.id }}/location_history')
+    fetch('/api/v1/kiosks/{{ kiosk.uuid }}/location')
         .then(function(response) {
             return response.json();
         })
@@ -406,7 +406,7 @@ const chart = new Chart(ctx, {
 
 // Función para actualizar el gráfico
 function updateChart() {
-    fetch(`/kiosk/api/sensor-data/${kiosk.id}`)
+    fetch(`/api/v1/kiosks/{{ kiosk.uuid }}/sensor-data`)
         .then(response => response.json())
         .then(data => {
             chart.data.labels = data.timestamps;

@@ -1,5 +1,5 @@
 # Estructura del Proyecto
-# Última actualización: 2025-01-22 17:51:03
+# Última actualización: 2025-01-23 04:02:12
 #
 # ADVERTENCIA: Este archivo es generado automáticamente.
 # NO MODIFICAR MANUALMENTE.
@@ -20,51 +20,60 @@
 #
 [file] Dockerfile (1.1KB, 47 lines) - Jan 18, 10:34 PM
 [file] GUIA_DESARROLLADOR_KIOSK_SISTEMA.md (17.2KB, 583 lines) - Jan 21, 03:12 PM
+[file] README.md (3.3KB, 134 lines) - Jan 22, 08:57 PM
 [dir]  app/ (? items) - Jan 16, 05:43 PM
-  [file] __init__.py (3.1KB, 96 lines) - Jan 21, 01:11 PM
+  [file] __init__.py (2.0KB, 68 lines) - Jan 23, 03:57 AM
   [dir]  blueprints/ (? items) - Jan 16, 05:43 PM
+    [file] __init__.py (918B, 29 lines) - Jan 23, 03:41 AM
     [file] ai.py (5.6KB, 130 lines) - Jan 21, 01:14 PM
-    [file] auth.py (8.6KB, 225 lines) - Jan 21, 01:08 PM
-    [file] kiosk.py (11.6KB, 302 lines) - Jan 22, 05:19 PM
+    [dir]  api/ (? items) - Jan 23, 01:37 AM
+      [file] __init__.py (328B, 13 lines) - Jan 23, 01:39 AM
+      [file] kiosk.py (5.7KB, 146 lines) - Jan 23, 03:15 AM
+    [file] auth.py (8.2KB, 220 lines) - Jan 23, 04:00 AM
+    [file] kiosk.py (5.1KB, 130 lines) - Jan 23, 03:07 AM
     [file] main.py (2.9KB, 84 lines) - Jan 22, 02:26 PM
     [file] monitor.py (1.9KB, 54 lines) - Jan 17, 03:25 AM
   [dir]  config/ (? items) - Jan 18, 01:14 AM
-    [file] alerts.json (1.6KB, 50 lines) - Jan 18, 01:18 AM
-    [file] security_config.py (2.9KB, 110 lines) - Jan 18, 09:43 PM
   [file] database.db (28.0KB, 0 lines) - Jan 21, 06:29 PM
-  [file] extensions.py (247B, 10 lines) - Jan 22, 04:35 PM
   [dir]  logs/ (? items) - Jan 17, 02:14 AM
     [file] admin_kiosk_2025-01-17.log (2.3KB, 0 lines) - Jan 17, 02:58 AM
     [file] admin_kiosk_2025-01-19.log (2.0KB, 0 lines) - Jan 19, 01:27 AM
     [file] admin_kiosk_2025-01-20.log (142.1KB, 0 lines) - Jan 20, 11:56 PM
     [file] admin_kiosk_2025-01-21.log (8.9KB, 0 lines) - Jan 21, 10:32 PM
-    [file] admin_kiosk_2025-01-22.log (9.6KB, 0 lines) - Jan 22, 05:30 PM
+    [file] admin_kiosk_2025-01-22.log (13.0KB, 0 lines) - Jan 22, 11:58 PM
+    [file] admin_kiosk_2025-01-23.log (8.6KB, 0 lines) - Jan 23, 01:40 AM
   [dir]  middleware/ (? items) - Jan 17, 10:37 PM
-    [file] input_validation.py (7.5KB, 206 lines) - Jan 18, 09:48 PM
+    [file] input_validation.py (8.4KB, 225 lines) - Jan 23, 03:35 AM
     [file] security.py (5.0KB, 131 lines) - Jan 22, 12:48 AM
     [file] security_middleware.py (3.0KB, 85 lines) - Jan 18, 09:26 PM
     [file] security_monitoring.py (8.2KB, 226 lines) - Jan 18, 09:48 PM
   [dir]  models/ (? items) - Jan 16, 05:43 PM
-    [file] ai.py (2.8KB, 66 lines) - Jan 21, 12:31 AM
-    [file] kiosk.py (9.5KB, 249 lines) - Jan 22, 04:34 PM
-    [file] kiosk_location_history.py (2.3KB, 54 lines) - Jan 22, 04:34 PM
-    [file] security.py (3.7KB, 88 lines) - Jan 22, 12:41 AM
-    [file] user.py (4.3KB, 113 lines) - Jan 22, 12:37 PM
-  [dir]  routes/ (? items) - Jan 18, 01:26 AM
+    [file] __init__.py (246B, 12 lines) - Jan 23, 01:33 AM
+    [file] ai.py (2.7KB, 66 lines) - Jan 23, 04:01 AM
+    [file] base.py (211B, 12 lines) - Jan 23, 03:57 AM
+    [dir]  kiosk/ (? items) - Jan 23, 01:29 AM
+      [file] __init__.py (300B, 10 lines) - Jan 23, 01:30 AM
+      [file] base.py (7.5KB, 186 lines) - Jan 23, 03:57 AM
+      [file] location_history.py (2.5KB, 65 lines) - Jan 23, 03:58 AM
+      [file] sensor_data.py (1.7KB, 51 lines) - Jan 23, 03:58 AM
+    [file] security.py (3.7KB, 89 lines) - Jan 23, 04:01 AM
+    [file] user.py (4.1KB, 112 lines) - Jan 23, 04:01 AM
   [dir]  services/ (? items) - Jan 16, 05:43 PM
     [file] ai_metrics.py (9.5KB, 232 lines) - Jan 21, 01:14 PM
-    [file] auth_service.py (7.0KB, 212 lines) - Jan 19, 12:46 AM
+    [file] auth_service.py (18.0KB, 475 lines) - Jan 23, 03:52 AM
     [file] backup_service.py (7.1KB, 198 lines) - Jan 18, 01:24 AM
     [file] cache_service.py (7.6KB, 238 lines) - Jan 18, 10:01 PM
+    [file] config_service.py (1.6KB, 43 lines) - Jan 23, 03:35 AM
     [file] dashboard_service.py (5.0KB, 144 lines) - Jan 18, 01:26 AM
-    [file] geolocation_service.py (5.7KB, 171 lines) - Jan 18, 01:49 AM
+    [file] geolocation_service.py (5.6KB, 173 lines) - Jan 23, 04:02 AM
     [file] kiosk_ai_service.py (6.8KB, 181 lines) - Jan 22, 02:10 AM
-    [file] kiosk_service.py (12.6KB, 356 lines) - Jan 22, 01:39 PM
+    [file] kiosk_service.py (23.7KB, 582 lines) - Jan 23, 03:28 AM
     [file] logging_service.py (6.2KB, 179 lines) - Jan 18, 11:54 PM
     [file] monitoring_service.py (8.6KB, 243 lines) - Jan 18, 11:55 PM
     [file] notification_service.py (10.1KB, 308 lines) - Jan 18, 11:53 PM
     [file] security_service.py (8.0KB, 235 lines) - Jan 22, 12:39 AM
     [file] two_factor_service.py (8.3KB, 256 lines) - Jan 18, 09:24 PM
+    [file] websocket_service.py (6.9KB, 178 lines) - Jan 23, 03:55 AM
   [dir]  static/ (? items) - Jan 18, 11:25 PM
     [dir]  css/ (? items) - Jan 18, 11:25 PM
       [file] ai_dashboard.css (10.4KB, 549 lines) - Jan 21, 03:48 PM
@@ -96,10 +105,10 @@
       [file] 500.html (800B, 18 lines) - Jan 19, 12:38 AM
     [dir]  kiosk/ (? items) - Jan 16, 05:50 PM
       [file] create.html (6.9KB, 188 lines) - Jan 22, 02:34 AM
-      [file] details.html (20.3KB, 505 lines) - Jan 22, 05:29 PM
+      [file] details.html (20.3KB, 505 lines) - Jan 23, 03:13 AM
       [file] list.html (14.2KB, 348 lines) - Jan 22, 02:25 AM
       [file] location_history.html (11.2KB, 286 lines) - Jan 22, 05:18 PM
-      [file] map.html (11.8KB, 299 lines) - Jan 22, 02:56 PM
+      [file] map.html (11.8KB, 299 lines) - Jan 23, 03:03 AM
       [file] update.html (10.8KB, 201 lines) - Jan 20, 11:55 PM
     [dir]  main/ (? items) - Jan 16, 05:48 PM
       [file] dashboard.html (8.3KB, 236 lines) - Jan 17, 02:02 AM
@@ -109,24 +118,15 @@
     [dir]  monitor/ (? items) - Jan 17, 03:25 AM
       [file] dashboard.html (8.0KB, 231 lines) - Jan 17, 03:26 AM
   [dir]  utils/ (? items) - Jan 16, 05:43 PM
-    [file] decorators.py (6.4KB, 170 lines) - Jan 18, 02:24 AM
-  [file] websockets.py (7.9KB, 229 lines) - Jan 21, 06:28 PM
-[file] backup_20250120_203508.sql (34.1KB, 0 lines) - Jan 20, 08:35 PM
-[file] backup_admin_kiosk2_.sql (44.4KB, 0 lines) - Jan 20, 11:57 PM
-[file] backup_admin_kiosk2_2025-01-20_17-12-51.sql (29.8KB, 0 lines) - Jan 20, 05:12 PM
-[file] backup_admin_kiosk2_20250120_235722.sql (44.4KB, 0 lines) - Jan 20, 11:57 PM
-[file] backup_admin_kiosk2_test_2025-01-20_17-12-59.sql (1.1KB, 0 lines) - Jan 20, 05:13 PM
-[file] backup_admin_kiosk_.sql (34.1KB, 0 lines) - Jan 21, 02:40 PM
-[file] backup_admin_kiosk_20250121.sql (30.0KB, 0 lines) - Jan 21, 02:42 PM
-[file] backup_before_store_name.sql (45.3KB, 0 lines) - Jan 22, 02:45 AM
+[file] app.log (68.8KB, 0 lines) - Jan 23, 03:42 AM
 [dir]  config/ (? items) - Jan 16, 05:43 PM
-  [file] default.py (5.2KB, 137 lines) - Jan 21, 01:08 PM
+  [file] __init__.py (345B, 13 lines) - Jan 23, 01:42 AM
+  [file] default.py (5.8KB, 141 lines) - Jan 23, 03:35 AM
   [file] deployment.json (892B, 26 lines) - Jan 20, 05:07 PM
   [file] logging_config.py (4.4KB, 125 lines) - Jan 16, 07:29 PM
   [dir]  security/ (? items) - Jan 18, 11:02 PM
     [file] hardening.py (3.7KB, 107 lines) - Jan 22, 12:48 AM
-[file] create_test_dirs.py (745B, 23 lines) - Jan 16, 07:05 PM
-[file] cura.md (13.8KB, 266 lines) - Jan 16, 05:43 PM
+[file] cura.md (13.6KB, 266 lines) - Jan 22, 09:17 PM
 [dir]  data/ (? items) - Jan 17, 02:54 AM
   [dir]  real/ (? items) - Jan 17, 02:54 AM
   [dir]  synthetic/ (? items) - Jan 17, 02:54 AM
@@ -142,152 +142,37 @@
     [file] architecture.md (3.3KB, 114 lines) - Jan 22, 12:48 AM
   [dir]  user/ (? items) - Jan 18, 10:57 PM
     [file] manual.md (3.8KB, 179 lines) - Jan 18, 11:01 PM
-[file] init_migrations.py (1.3KB, 39 lines) - Jan 20, 02:41 PM
 [dir]  instance/ (? items) - Jan 17, 02:14 AM
 [dir]  kiosk_app/ (? items) - Jan 21, 04:05 PM
-  [file] README.md (1.2KB, 54 lines) - Jan 21, 04:07 PM
-  [file] __init__.py (273B, 11 lines) - Jan 22, 01:17 AM
-  [file] kiosk_app.py (6.0KB, 157 lines) - Jan 22, 01:27 AM
-  [dir]  kiosk_configs/ (? items) - Jan 21, 06:24 PM
-    [file] 018fb2ef-5556-440d-8d67-c4192bc8369b.json (305B, 11 lines) - Jan 21, 06:29 PM
-    [file] 034164c3-0086-4d17-9e46-4e3d23ea5d84.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] 0ca2d903-8ffe-442e-9af5-4284d1b0f68d.json (276B, 11 lines) - Jan 21, 06:24 PM
-    [file] 0f914cc6-dd0f-42d5-a4c1-9e2d7eba1ba5.json (278B, 11 lines) - Jan 21, 06:24 PM
-    [file] 11cad7f1-09d5-4a0b-8c94-25ac918fb6c5.json (803B, 33 lines) - Jan 21, 09:39 PM
-    [file] 13c72b85-48f0-4e63-95e8-3c79aafaa952.json (803B, 33 lines) - Jan 21, 09:39 PM
-    [file] 152bb8a0-c6b2-44a9-903c-0deb166a4d79.json (268B, 11 lines) - Jan 21, 06:29 PM
-    [file] 1753f097-c1b6-4f93-9cfd-2c96226e0250.json (266B, 11 lines) - Jan 21, 06:29 PM
-    [file] 17a91d04-b73c-45d5-8a50-3411976e81f0.json (269B, 11 lines) - Jan 21, 06:24 PM
-    [file] 1997adbd-bd5c-4796-adbe-0cdc276093d2.json (267B, 9 lines) - Jan 22, 01:06 AM
-    [file] 1ca891da-eb0d-4291-b3c9-56bfc1abbeed.json (794B, 33 lines) - Jan 21, 09:39 PM
-    [file] 1dd17a28-e6b2-47cf-8cf3-c4b908914b71.json (805B, 33 lines) - Jan 21, 09:39 PM
-    [file] 1e1125da-70bc-4ecd-8fb6-c7e004707932.json (278B, 9 lines) - Jan 22, 01:06 AM
-    [file] 1fd6d875-ef3f-40c7-82df-b58138702988.json (263B, 9 lines) - Jan 22, 01:06 AM
-    [file] 21244cf4-c1e0-4978-97e8-228d95c2470a.json (305B, 11 lines) - Jan 21, 06:24 PM
-    [file] 2196e053-7a88-4f4e-9e49-aba26c10e216.json (278B, 11 lines) - Jan 21, 06:24 PM
-    [file] 245568e7-29f7-46be-a1ce-b6b6bd9b4e48.json (266B, 9 lines) - Jan 22, 01:06 AM
-    [file] 24c879c0-6b34-4462-960d-6ddc35873b44.json (277B, 9 lines) - Jan 22, 01:06 AM
-    [file] 2a9f34d0-1931-416b-9c37-7c0c6f0bbecb.json (266B, 9 lines) - Jan 22, 01:06 AM
-    [file] 2bdde7ab-a728-49dc-82d4-82932a46df24.json (262B, 9 lines) - Jan 22, 01:06 AM
-    [file] 326f8867-f829-4360-b0ec-4e3f54f6b289.json (804B, 33 lines) - Jan 21, 09:39 PM
-    [file] 33678982-9ebd-4676-b84e-2991b43cc517.json (833B, 33 lines) - Jan 21, 09:39 PM
-    [file] 3546c400-ec18-41b6-9b35-31dfdf1264e7.json (269B, 9 lines) - Jan 22, 01:06 AM
-    [file] 3c329e3d-58e9-4f51-9a66-faf78392987e.json (268B, 9 lines) - Jan 22, 01:06 AM
-    [file] 3c533393-4cf5-41fe-aa06-273696fd849b.json (832B, 33 lines) - Jan 21, 09:39 PM
-    [file] 3e546948-28ca-4c95-8423-ec23307113e0.json (794B, 33 lines) - Jan 21, 09:39 PM
-    [file] 3fcd7324-cd3e-4d99-bc3c-f2de14e22323.json (268B, 9 lines) - Jan 22, 01:06 AM
-    [file] 40078539-2e79-4043-a27f-9cb46d792e4e.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] 41fe8343-f05a-4ef2-8dbf-5b0081158d05.json (277B, 9 lines) - Jan 22, 01:06 AM
-    [file] 4454ab82-116a-4466-8554-35a95a7f5c1f.json (304B, 11 lines) - Jan 21, 06:29 PM
-    [file] 44c1fac8-0f49-4e6d-bb01-63d20b3f3dcb.json (306B, 11 lines) - Jan 21, 06:24 PM
-    [file] 47e50d5e-911b-446e-b8bf-f76f15ad4bc7.json (794B, 33 lines) - Jan 21, 09:39 PM
-    [file] 4b0771cf-ac60-46f1-89e8-3c3ba7c11630.json (833B, 33 lines) - Jan 21, 09:39 PM
-    [file] 4b8cf94c-e245-4c74-af7a-fc3062d1013b.json (805B, 33 lines) - Jan 21, 09:39 PM
-    [file] 5007ffb2-7f21-4f87-802c-d90f7da046fe.json (803B, 33 lines) - Jan 21, 09:39 PM
-    [file] 50641b25-4ada-474c-a1b8-dba2b6b7c496.json (275B, 11 lines) - Jan 21, 06:29 PM
-    [file] 50d28504-39c0-49c0-b742-23d2d54a8e52.json (277B, 11 lines) - Jan 21, 06:29 PM
-    [file] 54d4a6c8-715d-46b2-9393-328e2ad55e14.json (268B, 11 lines) - Jan 21, 06:29 PM
-    [file] 5544e76a-ad31-4507-a9e1-d9d3aea80bb8.json (262B, 9 lines) - Jan 22, 01:06 AM
-    [file] 5849698b-4deb-4a29-9a20-2a9a33aa2b10.json (805B, 33 lines) - Jan 21, 09:39 PM
-    [file] 59278303-6b14-468f-9e3d-7713332431a7.json (267B, 9 lines) - Jan 22, 01:06 AM
-    [file] 599af3f4-bb6d-4940-9556-7c4c78adf8da.json (265B, 9 lines) - Jan 22, 01:06 AM
-    [file] 59c4f4ce-87f4-4c7d-be35-eebebee7ea67.json (794B, 33 lines) - Jan 21, 09:39 PM
-    [file] 5a754d37-a622-4f87-8e70-2e9a1accb88d.json (275B, 11 lines) - Jan 21, 06:29 PM
-    [file] 5db4b1be-699b-4423-9418-ba00e04e37ac.json (279B, 9 lines) - Jan 22, 01:06 AM
-    [file] 5eeba5e4-d47a-44a4-99b1-d9674bbbfbff.json (263B, 9 lines) - Jan 22, 01:06 AM
-    [file] 6017a3a0-9633-4831-beac-e04c11e76ae3.json (267B, 11 lines) - Jan 21, 06:29 PM
-    [file] 62834c42-0e47-4274-b2f6-fe5e817d4749.json (795B, 33 lines) - Jan 21, 09:39 PM
-    [file] 6565b65a-7ee4-48d3-ac69-4b399ad55d32.json (267B, 9 lines) - Jan 22, 01:06 AM
-    [file] 6834fda8-dcbb-4872-b7ae-09f1206934cf.json (266B, 11 lines) - Jan 21, 06:29 PM
-    [file] 6cf6c60d-7c21-499b-97b7-e8ff4bd808e5.json (275B, 9 lines) - Jan 22, 01:06 AM
-    [file] 6fbfdb82-2528-4044-825d-ab6522cb262b.json (277B, 11 lines) - Jan 21, 06:29 PM
-    [file] 7106e623-296b-4942-a1c3-e984cb787ee5.json (267B, 11 lines) - Jan 21, 06:29 PM
-    [file] 76608508-8984-41bd-8dc9-61a8656f0c13.json (305B, 11 lines) - Jan 21, 06:29 PM
-    [file] 787a980d-ef29-4476-a671-ea25272e7e8b.json (262B, 9 lines) - Jan 22, 01:06 AM
-    [file] 7aeedebe-cf52-4a19-914f-83707af21e9e.json (804B, 33 lines) - Jan 21, 09:39 PM
-    [file] 7b02ea9b-c461-4ade-ade5-fc1c05d1895c.json (794B, 33 lines) - Jan 21, 09:39 PM
-    [file] 7bd4f749-d9f0-4123-90d3-83ced4a523a1.json (794B, 33 lines) - Jan 21, 09:39 PM
-    [file] 7c3f4fff-bb0a-4fec-8997-d4eebf9d1a01.json (266B, 11 lines) - Jan 21, 06:24 PM
-    [file] 7c4ef89f-6ca0-4ee2-8825-287ca5978f05.json (275B, 9 lines) - Jan 22, 01:06 AM
-    [file] 7e6027e9-d536-4cef-ab6f-bc9cf82e774a.json (277B, 11 lines) - Jan 21, 06:24 PM
-    [file] 7ee2f86c-22cf-4e4d-adaf-8eb9528a552e.json (262B, 9 lines) - Jan 22, 01:06 AM
-    [file] 83deb18d-9282-41c4-8094-1600a16ea741.json (267B, 11 lines) - Jan 21, 06:29 PM
-    [file] 86d60957-fd55-47b4-b084-c0f574222aeb.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] 8a3d05c5-beb9-4583-8c92-554130182061.json (265B, 9 lines) - Jan 22, 01:06 AM
-    [file] 8a70e684-c569-4328-83c4-32504461334a.json (306B, 11 lines) - Jan 21, 06:24 PM
-    [file] 8ab9893d-9540-4a5c-ab02-1b0fe897ad72.json (268B, 11 lines) - Jan 21, 06:24 PM
-    [file] 8c2a5a16-db70-4c98-879d-ad8e0b13bd5e.json (278B, 11 lines) - Jan 21, 06:24 PM
-    [file] 979ef7a1-4dd5-45d9-a4db-4e5cf666e12c.json (277B, 11 lines) - Jan 21, 06:24 PM
-    [file] 99e6ff4b-8b12-4948-a940-b4b352f8f9ea.json (267B, 11 lines) - Jan 21, 06:29 PM
-    [file] 9d665772-f09f-412d-a420-5da702a7a1dc.json (278B, 11 lines) - Jan 21, 06:29 PM
-    [file] 9f0deb26-3dff-42f1-abcc-74673c764e44.json (803B, 33 lines) - Jan 21, 09:39 PM
-    [file] a1b3c547-ad8f-43b8-8246-4b5a5830f3a1.json (266B, 11 lines) - Jan 21, 06:29 PM
-    [file] a266d665-ecbf-4914-8af8-a4759651bc94.json (805B, 33 lines) - Jan 21, 09:39 PM
-    [file] a2e6c72f-54e9-4dd8-b85e-c225bf9ed17d.json (268B, 11 lines) - Jan 21, 06:29 PM
-    [file] a92e7ee9-af4f-42be-83b3-ea164b50d077.json (832B, 33 lines) - Jan 21, 09:39 PM
-    [file] a97486a3-5865-4bf1-89a3-8bf58fb1477d.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] aa4d0708-f7cb-40ce-bcec-878ff04c1981.json (305B, 11 lines) - Jan 21, 06:24 PM
-    [file] ae1e5266-34e5-4e57-a264-dba22c97e050.json (793B, 33 lines) - Jan 21, 09:39 PM
-    [file] b1ed42cb-becb-4d0a-9532-9c371165f9ac.json (278B, 11 lines) - Jan 21, 06:29 PM
-    [file] b219a494-e97a-4bfa-a46d-82228d9a3d01.json (277B, 11 lines) - Jan 21, 06:24 PM
-    [file] b264bba0-aa3f-424c-aee4-fd095a4e920d.json (305B, 11 lines) - Jan 21, 06:29 PM
-    [file] b302d329-ea33-4a48-adc5-b078241ea8d5.json (276B, 11 lines) - Jan 21, 06:29 PM
-    [file] b4a7e5f0-ab03-447c-92e4-f705b311a80c.json (805B, 33 lines) - Jan 21, 09:39 PM
-    [file] b4ac8b26-b4b7-46b8-b37a-85da89589113.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] b592fadf-4f6e-480a-ab0a-910bf43faefe.json (305B, 11 lines) - Jan 21, 06:24 PM
-    [file] b598b2b7-31d0-4c01-9bec-bf96d1b6bcc0.json (277B, 9 lines) - Jan 22, 01:06 AM
-    [file] b5bd91cb-509b-4d66-949b-1ab111735342.json (792B, 33 lines) - Jan 21, 09:39 PM
-    [file] b62afa2c-9247-46cc-9aea-47ad18790ee1.json (277B, 9 lines) - Jan 22, 01:06 AM
-    [file] b65df03c-f44c-42d1-bc29-453b3830eb5e.json (266B, 11 lines) - Jan 21, 06:24 PM
-    [file] b83a5738-73f9-489c-9736-cb851c5f09ea.json (279B, 9 lines) - Jan 22, 01:06 AM
-    [file] b8755990-65cf-49f9-b1ce-018ec1ff5e7b.json (268B, 11 lines) - Jan 21, 06:24 PM
-    [file] bb169a52-762a-461f-a30a-a8f9edba0b77.json (277B, 11 lines) - Jan 21, 06:24 PM
-    [file] bba8fc7e-df1b-4795-8beb-70fc2f5171f8.json (305B, 11 lines) - Jan 21, 06:24 PM
-    [file] bd0d1cfc-0057-4314-9165-7f46b2a74378.json (833B, 33 lines) - Jan 21, 09:39 PM
-    [file] be378e96-1aee-45ea-bd72-567b618c2c75.json (267B, 11 lines) - Jan 21, 06:29 PM
-    [file] c59ef054-d72f-46dc-9e86-e02d4ae6215d.json (306B, 11 lines) - Jan 21, 06:29 PM
-    [file] c600b1ab-8068-4115-81b8-fb961aa4420a.json (833B, 33 lines) - Jan 21, 09:39 PM
-    [file] c783d58b-e424-46a4-aa83-b8025423fc5d.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] cc21dd5c-eaba-4533-8cea-b3daa81cd468.json (266B, 11 lines) - Jan 21, 06:29 PM
-    [file] cdcc468b-8ceb-4e93-8275-4eb3911b05f0.json (264B, 9 lines) - Jan 22, 01:06 AM
-    [file] ceb591f0-61d0-4efb-b495-5eaa4cb8854f.json (266B, 11 lines) - Jan 21, 06:24 PM
-    [file] d27c1ed1-68fd-4cb5-95ca-3f98d5b48cc6.json (306B, 11 lines) - Jan 21, 06:29 PM
-    [file] d3cf688b-47a6-40e9-8dce-5dcc7eb60708.json (267B, 9 lines) - Jan 22, 01:06 AM
-    [file] d4375071-a96a-41d2-8ff8-0896bee138db.json (268B, 11 lines) - Jan 21, 06:24 PM
-    [file] d6a3b085-7f27-408d-afd0-6f0967675509.json (305B, 11 lines) - Jan 21, 06:29 PM
-    [file] daf975c2-de2d-4510-b0d5-4b92dc9af596.json (266B, 9 lines) - Jan 22, 01:06 AM
-    [file] dbaf8b0d-6fa9-47a4-87ff-283495bf8730.json (277B, 9 lines) - Jan 22, 01:06 AM
-    [file] df6ff159-57e8-49ca-8f3a-89afc726b8bd.json (278B, 11 lines) - Jan 21, 06:29 PM
-    [file] e0847f81-b99c-4100-b508-18957a7c3fc5.json (306B, 11 lines) - Jan 21, 06:24 PM
-    [file] e25b9d23-02bf-49be-a198-1cc3da3265a0.json (306B, 11 lines) - Jan 21, 06:29 PM
-    [file] e97f9bcb-83d7-44ac-a7d2-3ad7ab7772f0.json (792B, 33 lines) - Jan 21, 09:39 PM
-    [file] e9a1a577-0b3a-44bf-b7fe-2848bdd5a7ca.json (804B, 33 lines) - Jan 21, 09:39 PM
-    [file] ed920cd6-56d5-49af-a045-b6a43029d3a5.json (267B, 9 lines) - Jan 22, 01:06 AM
-    [file] f0fa1f90-28ac-4366-9ab1-00283bd12f3e.json (795B, 33 lines) - Jan 21, 09:39 PM
-    [file] f1bad18b-62a4-4c3d-91a5-53a599791155.json (795B, 33 lines) - Jan 21, 09:39 PM
-    [file] f28a551c-2c13-4206-8cb3-4ebc2b459b7b.json (276B, 11 lines) - Jan 21, 06:24 PM
-    [file] f86ad2a9-d56d-451f-8ea2-5525784bdad4.json (305B, 11 lines) - Jan 21, 06:29 PM
-    [file] facf9ce1-3bb4-4119-8028-c77feff4ee55.json (278B, 11 lines) - Jan 21, 06:29 PM
-    [file] ffe643fa-49c7-478d-8952-01657264bfa4.json (267B, 11 lines) - Jan 21, 06:24 PM
-    [file] kiosks_summary.json (102B, 5 lines) - Jan 21, 07:37 PM
-  [file] kiosk_spawner.py (6.4KB, 162 lines) - Jan 22, 01:46 AM
-  [file] requirements.txt (77B, 4 lines) - Jan 21, 04:06 PM
-[file] kiosk_emulator.md (20.0KB, 645 lines) - Jan 21, 03:22 PM
-[file] kiosk_simulation_20250121_193011.log (353B, 0 lines) - Jan 21, 07:30 PM
-[file] kiosk_simulation_20250121_193133.log (353B, 0 lines) - Jan 21, 07:31 PM
-[file] kiosk_simulation_20250121_193327.log (353B, 0 lines) - Jan 21, 07:33 PM
+  [file] README.md (2.2KB, 100 lines) - Jan 23, 12:46 AM
+  [file] __init__.py (286B, 10 lines) - Jan 22, 08:57 PM
+  [file] kiosk_app.py (8.0KB, 218 lines) - Jan 23, 02:57 AM
+  [file] kiosk_behavior_simulator.py (6.7KB, 189 lines) - Jan 22, 11:53 PM
+  [dir]  kiosk_configs/ (? items) - Jan 22, 07:10 PM
+  [file] kiosk_simulator_runner.py (5.1KB, 126 lines) - Jan 23, 02:02 AM
+  [file] requirements.txt (186B, 9 lines) - Jan 23, 12:30 AM
+[file] kiosk_emulator.md (5.0KB, 203 lines) - Jan 22, 11:56 PM
 [dir]  logs/ (? items) - Jan 19, 12:38 AM
-  [file] admin_kiosk.log (2.5KB, 34 lines) - Jan 19, 12:46 AM
+  [file] admin_kiosk.log (7.4KB, 58 lines) - Jan 23, 01:40 AM
   [file] admin_kiosk.log.1 (8.4KB, 105 lines) - Jan 19, 12:44 AM
   [file] admin_kiosk.log.2 (8.8KB, 107 lines) - Jan 19, 12:38 AM
-[file] migrate.py (984B, 0 lines) - Jan 21, 10:31 PM
+  [file] kiosk_simulation_20250122_212630.log (0B, 0 lines) - Jan 22, 09:26 PM
+  [file] kiosk_simulation_20250122_213538.log (0B, 0 lines) - Jan 22, 09:35 PM
+  [file] kiosk_simulation_20250122_224254.log (0B, 0 lines) - Jan 22, 10:42 PM
+[file] migrate.py (2.6KB, 0 lines) - Jan 22, 09:10 PM
 [dir]  migrations/ (? items) - Jan 22, 02:48 AM
   [file] README (41B, 1 lines) - Jan 22, 02:52 AM
   [file] alembic.ini (857B, 50 lines) - Jan 22, 02:52 AM
   [file] script.py.mako (494B, 24 lines) - Jan 22, 02:52 AM
   [dir]  versions/ (? items) - Jan 22, 02:52 AM
+    [file] 0876c2350c3e_add_last_telemetry_to_kiosk.py (2.6KB, 60 lines) - Jan 23, 02:29 AM
     [file] 1467e664b7c1_initial_migration.py (8.7KB, 159 lines) - Jan 22, 02:53 AM
+    [file] 92cb34663604_add_sensor_data_fields.py (1.2KB, 38 lines) - Jan 23, 12:14 AM
     [file] add_kiosk_location_history.py (3.1KB, 68 lines) - Jan 22, 04:41 PM
+    [file] beabae057aa4_add_socket_id_to_kiosk.py (3.1KB, 60 lines) - Jan 22, 08:03 PM
+    [file] d57fb7391fe7_initial_migration.py (6.3KB, 120 lines) - Jan 23, 02:41 AM
+    [file] d804efd04dd1_add_kiosk_telemetry_fields.py (3.8KB, 78 lines) - Jan 23, 12:10 AM
+    [file] e00db0ddb8d7_change_location_type_to_string.py (1.2KB, 38 lines) - Jan 23, 02:50 AM
 [dir]  models/ (? items) - Jan 17, 02:54 AM
   [file] kiosk_anomaly_model.pth (3.1KB, 0 lines) - Jan 21, 01:01 AM
   [file] kiosk_anomaly_model_20250117_025703.pth (5.0KB, 0 lines) - Jan 17, 02:57 AM
@@ -301,11 +186,10 @@
   [file] metrics_20250120_222626.txt (106B, 4 lines) - Jan 20, 10:26 PM
   [file] metrics_20250120_235007.txt (80B, 4 lines) - Jan 20, 11:50 PM
   [file] metrics_20250121_010110.txt (92B, 4 lines) - Jan 21, 01:01 AM
-[file] project_custom_structure.txt (25.7KB, 376 lines) - Jan 22, 01:36 PM
+[file] project_custom_structure.txt (15.5KB, 261 lines) - Jan 23, 04:02 AM
 [file] pytest.ini (738B, 34 lines) - Jan 16, 07:07 PM
-[file] register_kiosks.py (3.9KB, 104 lines) - Jan 21, 07:50 PM
-[file] requirements.txt (2.5KB, 0 lines) - Jan 22, 04:37 PM
-[file] run.py (1.8KB, 55 lines) - Jan 21, 10:31 PM
+[file] requirements.txt (202B, 0 lines) - Jan 22, 08:57 PM
+[file] run.py (305B, 14 lines) - Jan 22, 08:18 PM
 [dir]  scripts/ (? items) - Jan 16, 05:43 PM
   [file] README_DISASTER_RECOVERY.md (2.3KB, 82 lines) - Jan 16, 08:02 PM
   [file] README_KIOSK_MANAGEMENT.md (2.7KB, 96 lines) - Jan 16, 08:06 PM
@@ -331,8 +215,6 @@
   [file] run_load_tests.py (7.7KB, 221 lines) - Jan 20, 02:30 PM
   [file] setup_project.py (4.6KB, 141 lines) - Jan 20, 02:33 PM
   [file] wait_for_db.py (1.7KB, 54 lines) - Jan 20, 02:30 PM
-[file] setup_kiosks.py (4.2KB, 110 lines) - Jan 22, 01:06 AM
-[file] simulate_kiosks.py (3.0KB, 95 lines) - Jan 21, 08:05 PM
 [dir]  tests/ (? items) - Jan 16, 05:43 PM
   [file] README.md (1.2KB, 63 lines) - Jan 20, 05:09 PM
   [file] conftest.py (1.1KB, 39 lines) - Jan 20, 05:07 PM

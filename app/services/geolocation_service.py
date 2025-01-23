@@ -1,5 +1,7 @@
-# EL CÓDIGO DE ESTE ARCHIVO PUEDE MODIFICARSE UNICAMENTE Y 
-# SOLAMENTE SIGUIENDO LO ESTABLECIDO EN 'cura.md' Y 'project_custom_structure.txt'
+"""
+Servicio de geolocalización.
+Sigue el patrón MVT + S.
+"""
 
 import logging
 from datetime import datetime
@@ -7,7 +9,7 @@ from typing import Optional, Dict, Any, Tuple
 import requests
 from flask import current_app
 from app.models.kiosk import Kiosk
-from app import db
+from app.models.base import db
 
 class GeolocationService:
     """Servicio para manejar la geolocalización de kiosks"""

@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 1467e664b7c1
+Revision ID: 6144a11609ba
 Revises: 
-Create Date: 2025-01-22 02:53:04.401254
+Create Date: 2025-01-23 04:16:51.812596
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '1467e664b7c1'
+revision = '6144a11609ba'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -56,15 +56,16 @@ def upgrade():
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('username', sa.String(length=50), nullable=False),
+    sa.Column('username', sa.String(length=64), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
-    sa.Column('password_hash', sa.String(length=255), nullable=False),
+    sa.Column('password_hash', sa.String(length=128), nullable=True),
     sa.Column('role_name', sa.String(length=20), nullable=False),
     sa.Column('two_factor_enabled', sa.Boolean(), nullable=True),
     sa.Column('two_factor_secret', sa.String(length=32), nullable=True),
-    sa.Column('backup_codes', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+    sa.Column('backup_codes', sa.JSON(), nullable=True),
     sa.Column('temp_2fa_code', postgresql.JSON(astext_type=sa.Text()), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('last_login', sa.DateTime(), nullable=True),
     sa.Column('failed_login_attempts', sa.Integer(), nullable=True),
     sa.Column('account_locked', sa.Boolean(), nullable=True),
@@ -78,6 +79,11 @@ def upgrade():
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('store_name', sa.String(length=200), nullable=True),
     sa.Column('location', sa.String(length=200), nullable=True),
+    sa.Column('os_name', sa.String(length=50), nullable=True),
+    sa.Column('os_version', sa.String(length=50), nullable=True),
+    sa.Column('os_platform', sa.String(length=50), nullable=True),
+    sa.Column('chromium_status', sa.String(length=20), nullable=True),
+    sa.Column('chromium_version', sa.String(length=50), nullable=True),
     sa.Column('latitude', sa.Float(), nullable=True),
     sa.Column('longitude', sa.Float(), nullable=True),
     sa.Column('altitude', sa.Float(), nullable=True),
@@ -90,11 +96,31 @@ def upgrade():
     sa.Column('reported_location_accuracy', sa.Float(), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=True),
     sa.Column('last_online', sa.DateTime(), nullable=True),
+    sa.Column('last_telemetry', sa.DateTime(), nullable=True),
     sa.Column('cpu_model', sa.String(length=100), nullable=True),
+    sa.Column('cpu_temperature', sa.Float(), nullable=True),
     sa.Column('ram_total', sa.Float(), nullable=True),
     sa.Column('storage_total', sa.Float(), nullable=True),
+    sa.Column('disk_usage', sa.Float(), nullable=True),
+    sa.Column('disk_free', sa.Float(), nullable=True),
+    sa.Column('fan_rpm', sa.Integer(), nullable=True),
     sa.Column('ip_address', sa.String(length=45), nullable=True),
+    sa.Column('public_ip', sa.String(length=45), nullable=True),
     sa.Column('mac_address', sa.String(length=17), nullable=True),
+    sa.Column('wifi_signal_strength', sa.Float(), nullable=True),
+    sa.Column('connection_speed', sa.Float(), nullable=True),
+    sa.Column('network_latency', sa.Float(), nullable=True),
+    sa.Column('packets_sent', sa.Integer(), nullable=True),
+    sa.Column('packets_received', sa.Integer(), nullable=True),
+    sa.Column('packets_lost', sa.Integer(), nullable=True),
+    sa.Column('ambient_temperature', sa.Float(), nullable=True),
+    sa.Column('humidity', sa.Float(), nullable=True),
+    sa.Column('voltage', sa.Float(), nullable=True),
+    sa.Column('door_status', sa.String(length=20), nullable=True),
+    sa.Column('last_unauthorized_access', sa.DateTime(), nullable=True),
+    sa.Column('block_reason', sa.String(length=200), nullable=True),
+    sa.Column('local_timezone', sa.String(length=50), nullable=True),
+    sa.Column('utc_offset', sa.Integer(), nullable=True),
     sa.Column('capabilities', sa.JSON(), nullable=True),
     sa.Column('credentials_hash', sa.String(length=128), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
@@ -102,6 +128,7 @@ def upgrade():
     sa.Column('owner_id', sa.Integer(), nullable=True),
     sa.Column('health_score', sa.Float(), nullable=True),
     sa.Column('anomaly_probability', sa.Float(), nullable=True),
+    sa.Column('socket_id', sa.String(length=50), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('uuid')
@@ -133,12 +160,39 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('kiosk_location_history',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('kiosk_id', sa.Integer(), nullable=False),
+    sa.Column('latitude', sa.Float(), nullable=False),
+    sa.Column('longitude', sa.Float(), nullable=False),
+    sa.Column('accuracy', sa.Float(), nullable=True),
+    sa.Column('timestamp', sa.DateTime(), nullable=False),
+    sa.Column('location_type', sa.String(length=10), server_default='assigned', nullable=False),
+    sa.Column('previous_latitude', sa.Float(), nullable=True),
+    sa.Column('previous_longitude', sa.Float(), nullable=True),
+    sa.Column('change_reason', sa.String(length=255), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.CheckConstraint("location_type IN ('assigned', 'reported')", name='check_location_type_values'),
+    sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['kiosk_id'], ['kiosks.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('kiosk_location_history', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_kiosk_location_history_kiosk_id'), ['kiosk_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_kiosk_location_history_location_type'), ['location_type'], unique=False)
+        batch_op.create_index(batch_op.f('ix_kiosk_location_history_timestamp'), ['timestamp'], unique=False)
+
     op.create_table('sensor_data',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('kiosk_id', sa.Integer(), nullable=False),
     sa.Column('cpu_usage', sa.Float(), nullable=False),
+    sa.Column('cpu_temperature', sa.Float(), nullable=True),
     sa.Column('memory_usage', sa.Float(), nullable=False),
     sa.Column('network_latency', sa.Float(), nullable=True),
+    sa.Column('ambient_temperature', sa.Float(), nullable=True),
+    sa.Column('humidity', sa.Float(), nullable=True),
+    sa.Column('voltage', sa.Float(), nullable=True),
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['kiosk_id'], ['kiosks.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -149,6 +203,12 @@ def upgrade():
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('sensor_data')
+    with op.batch_alter_table('kiosk_location_history', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_kiosk_location_history_timestamp'))
+        batch_op.drop_index(batch_op.f('ix_kiosk_location_history_location_type'))
+        batch_op.drop_index(batch_op.f('ix_kiosk_location_history_kiosk_id'))
+
+    op.drop_table('kiosk_location_history')
     op.drop_table('security_event')
     op.drop_table('security_audit')
     op.drop_table('kiosks')

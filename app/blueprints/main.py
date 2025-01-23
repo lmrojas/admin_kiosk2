@@ -54,6 +54,37 @@ def backups():
     """Vista de backups del sistema"""
     return render_template('main/backups.html')
 
+@main_bp.route('/dashboard/ai')
+@login_required
+def ai_dashboard():
+    """Vista del dashboard de IA integrada en el dashboard principal."""
+    try:
+        from app.services.kiosk_ai_service import KioskAIService
+        ai_service = KioskAIService()
+        
+        metrics = ai_service.get_model_metrics()
+        if not metrics:
+            metrics = {
+                'model_version': 'N/A',
+                'accuracy_rate': 0.0,
+                'avg_prediction_time': 0,
+                'anomaly_threshold': 0.7,
+                'is_training': False,
+                'training_progress': 0,
+                'training_loss': 0.0,
+                'current_epoch': 0,
+                'total_epochs': 50
+            }
+            
+        return render_template('main/dashboard.html',
+                            active_tab='ai',
+                            ai_metrics=metrics)
+                            
+    except Exception as e:
+        current_app.logger.error(f"Error al cargar el dashboard de IA: {str(e)}")
+        flash('Error al cargar los datos de IA', 'error')
+        return redirect(url_for('main.dashboard'))
+
 @main_bp.route('/profile')
 @login_required
 def profile():

@@ -11,6 +11,8 @@ import json
 from typing import Dict, Any, List, Optional
 import logging
 from app.config.security_config import INPUT_SANITIZATION
+from app.services.config_service import config_service
+from bleach import clean
 
 logger = logging.getLogger(__name__)
 
@@ -203,4 +205,21 @@ class InputValidationMiddleware:
                 self.validate_request_data()
                 return f(*args, **kwargs)
             return wrapped
-        return decorator 
+        return decorator
+
+def sanitize_input():
+    """Sanitiza la entrada del usuario usando la configuración del servicio."""
+    if request.method == 'POST':
+        sanitization_config = config_service.get_security_config()['INPUT_SANITIZATION']
+        
+        for key, value in request.form.items():
+            if isinstance(value, str):
+                request.form[key] = clean(
+                    value,
+                    tags=sanitization_config['ALLOWED_TAGS'],
+                    attributes=sanitization_config['ALLOWED_ATTRIBUTES'],
+                    strip=sanitization_config['STRIP']
+                )
+                
+                if len(request.form[key]) > sanitization_config['MAX_LENGTH']:
+                    raise ValueError(f'Input {key} exceeds maximum length') 

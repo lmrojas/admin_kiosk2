@@ -3,18 +3,55 @@ Módulo de autenticación y autorización.
 Este código solo puede ser modificado según @cura.md y project_custom_structure.txt
 """
 
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User, UserRole, UserPermission
 from app.services.auth_service import AuthService
 from app.services.two_factor_service import TwoFactorService
-from app.utils.decorators import admin_required, permission_required
 import logging
+from functools import wraps
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 auth_service = AuthService()
 two_factor_service = TwoFactorService()
 logger = logging.getLogger(__name__)
+
+def admin_required(f):
+    """Decorador que verifica que el usuario sea administrador."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        if not current_user.has_role(UserRole.ADMIN.value):
+            flash('Se requiere rol de administrador para acceder a esta página.', 'danger')
+            return abort(403)
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def permission_required(permission):
+    """Decorador que verifica que el usuario tenga el permiso requerido."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+                return redirect(url_for('auth.login'))
+            
+            if not current_user.has_permission(permission):
+                flash('No tienes los permisos necesarios para acceder a esta página.', 'danger')
+                return abort(403)
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@auth_bp.route('/')
+def index():
+    """Ruta raíz del blueprint de autenticación."""
+    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -26,34 +63,22 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         code_2fa = request.form.get('code_2fa')
-        remember = True  # Mantener la sesión activa
+        remember = True
         
         try:
-            user = auth_service.authenticate(username, password)
-            if not user:
-                flash('Credenciales inválidas', 'error')
+            result = auth_service.process_login(username, password, code_2fa)
+            if result.get('success'):
+                user = result['user']
+                login_user(user, remember=remember)
+                session.permanent = True
+                return redirect(url_for('main.dashboard'))
+            elif result.get('needs_2fa'):
+                session['pending_user_id'] = result['user_id']
+                session.permanent = True
+                return redirect(url_for('auth.verify_2fa'))
+            else:
+                flash(result.get('error', 'Error de autenticación'), 'error')
                 return redirect(url_for('auth.login'))
-            
-            # Verificar 2FA si está habilitado
-            if user.two_factor_enabled:
-                if not code_2fa:
-                    # Guardar usuario en sesión y redirigir a verificación 2FA
-                    session['pending_user_id'] = user.id
-                    session.permanent = True  # Usar tiempo límite configurado
-                    return redirect(url_for('auth.verify_2fa'))
-                
-                if not two_factor_service.verify_code(user, code_2fa):
-                    flash('Código 2FA inválido', 'error')
-                    return redirect(url_for('auth.verify_2fa'))
-            
-            login_user(user, remember=remember)
-            session.permanent = True  # Usar tiempo límite configurado
-            
-            # Limpiar datos sensibles de la sesión
-            session.pop('pending_user_id', None)
-            
-            logger.info(f'Usuario {user.username} ha iniciado sesión')
-            return redirect(url_for('main.dashboard'))
             
         except Exception as e:
             logger.error(f'Error en login: {str(e)}')
@@ -70,45 +95,53 @@ def register():
         password = request.form.get('password')
         
         try:
-            user = auth_service.register_user(username, email, password)
-            if user:
+            result = auth_service.process_registration(username, email, password)
+            if result.get('success'):
                 flash('Usuario registrado exitosamente', 'success')
-                logger.info(f'Nuevo usuario registrado: {username}')
                 return redirect(url_for('auth.login'))
             else:
-                flash('Error al registrar usuario', 'error')
-        except ValueError as e:
-            flash(str(e), 'error')
-            logger.warning(f'Error de validación en registro: {str(e)}')
+                flash(result.get('error', 'Error al registrar usuario'), 'error')
         except Exception as e:
             logger.error(f'Error en registro: {str(e)}')
             flash('Error en el proceso de registro', 'error')
     
     return render_template('auth/register.html')
 
-@auth_bp.route('/verify-2fa', methods=['GET', 'POST'])
-def verify_2fa():
-    """Vista de verificación 2FA."""
+@auth_bp.route('/verify/<verification_type>', methods=['GET', 'POST'])
+def verify():
+    """
+    Vista unificada de verificación.
+    Maneja 2FA, códigos de respaldo y códigos temporales.
+    """
     if 'pending_user_id' not in session:
-        return redirect(url_for('auth.login'))
-    
-    user = User.query.get(session['pending_user_id'])
-    if not user:
         return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
         code = request.form.get('code')
+        result = auth_service.verify_auth(
+            session['pending_user_id'], 
+            code,
+            verification_type
+        )
         
-        # Verificar código
-        if two_factor_service.verify_code(user, code):
-            login_user(user)
+        if result.get('success'):
+            user = result['user']
+            login_user(user, remember=True)
+            session.permanent = True
             session.pop('pending_user_id', None)
-            logger.info(f'Usuario {user.username} verificó 2FA exitosamente')
-            return redirect(url_for('dashboard.index'))
-        
-        flash('Código inválido', 'error')
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash(result.get('error', 'Código inválido'), 'error')
     
-    return render_template('auth/2fa.html', username=user.username)
+    # Para solicitudes GET o verificación fallida
+    if verification_type == '2fa':
+        return render_template('auth/verify_2fa.html')
+    elif verification_type == 'backup':
+        return render_template('auth/verify_backup.html')
+    elif verification_type == 'temp':
+        return render_template('auth/verify_temp.html')
+    else:
+        abort(404)
 
 @auth_bp.route('/logout')
 @login_required
@@ -170,25 +203,6 @@ def backup_codes():
     codes = two_factor_service.generate_backup_codes()
     return render_template('auth/backup_codes.html', backup_codes=codes)
 
-@auth_bp.route('/verify-backup-code', methods=['POST'])
-def verify_backup_code():
-    """Endpoint para verificar código de respaldo."""
-    if 'pending_user_id' not in session:
-        return jsonify({'error': 'No hay sesión pendiente'}), 400
-    
-    user = User.query.get(session['pending_user_id'])
-    if not user:
-        return jsonify({'error': 'Usuario no encontrado'}), 404
-    
-    code = request.form.get('code')
-    if two_factor_service.verify_backup_code(user, code):
-        login_user(user)
-        session.pop('pending_user_id', None)
-        logger.info(f'Usuario {user.username} usó código de respaldo')
-        return jsonify({'success': True})
-    
-    return jsonify({'error': 'Código inválido'}), 400
-
 @auth_bp.route('/request-temp-code', methods=['POST'])
 def request_temp_code():
     """Endpoint para solicitar código temporal."""
@@ -203,23 +217,4 @@ def request_temp_code():
         logger.info(f'Código temporal enviado a {user.username}')
         return jsonify({'message': 'Código enviado'})
     
-    return jsonify({'error': 'Error enviando código'}), 500
-
-@auth_bp.route('/verify-temp-code', methods=['POST'])
-def verify_temp_code():
-    """Endpoint para verificar código temporal."""
-    if 'pending_user_id' not in session:
-        return jsonify({'error': 'No hay sesión pendiente'}), 400
-    
-    user = User.query.get(session['pending_user_id'])
-    if not user:
-        return jsonify({'error': 'Usuario no encontrado'}), 404
-    
-    code = request.form.get('code')
-    if two_factor_service.verify_temp_code(user, code):
-        login_user(user)
-        session.pop('pending_user_id', None)
-        logger.info(f'Usuario {user.username} verificó con código temporal')
-        return jsonify({'success': True})
-    
-    return jsonify({'error': 'Código inválido'}), 400 
+    return jsonify({'error': 'Error enviando código'}), 500 

@@ -1,6 +1,11 @@
+"""
+Modelo para el historial de ubicaciones de kiosks.
+Sigue el patrón MVT + S.
+"""
+
 from datetime import datetime
-from app.extensions import db
-from sqlalchemy.dialects.postgresql import ENUM
+from app.models.base import db
+from sqlalchemy.orm import relationship
 
 class KioskLocationHistory(db.Model):
     """Modelo para almacenar el historial de ubicaciones de los kiosks."""
@@ -14,9 +19,11 @@ class KioskLocationHistory(db.Model):
     accuracy = db.Column(db.Float, nullable=True)
     timestamp = db.Column(db.DateTime, nullable=False, index=True)
     location_type = db.Column(
-        ENUM('assigned', 'reported', name='location_type_enum'),
+        db.String(10),
         nullable=False,
-        index=True
+        index=True,
+        info={'choices': ['assigned', 'reported']},
+        server_default='assigned'
     )
     previous_latitude = db.Column(db.Float, nullable=True)
     previous_longitude = db.Column(db.Float, nullable=True)
@@ -25,16 +32,20 @@ class KioskLocationHistory(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     
     # Relaciones
-    kiosk = db.relationship('Kiosk', backref=db.backref('location_history', lazy='dynamic'))
-    user = db.relationship('User', backref=db.backref('location_changes', lazy='dynamic'))
-    
-    def __repr__(self):
-        return f'<KioskLocationHistory {self.kiosk_id} {self.location_type} {self.timestamp}>'
+    kiosk = relationship('Kiosk', back_populates='location_history')
+    user = relationship('User', backref=db.backref('location_changes', lazy='dynamic'))
     
     @property
     def has_previous_location(self):
         """Indica si hay una ubicación anterior registrada."""
         return self.previous_latitude is not None and self.previous_longitude is not None
+    
+    __table_args__ = (
+        db.CheckConstraint(
+            location_type.in_(['assigned', 'reported']),
+            name='check_location_type_values'
+        ),
+    )
     
     def to_dict(self):
         """Convierte el registro a diccionario."""

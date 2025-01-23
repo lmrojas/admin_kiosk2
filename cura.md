@@ -222,7 +222,7 @@ En **cada archivo** (código Python, plantillas HTML, JS, etc.) al **inicio**:
    - Si se detectan errores, corregirlos **antes** de subir la migración definitiva.
 
 3. **Respaldo (Backup) de BD**:
-   - Antes de cualquier cambio mayor en la base de datos (columna nueva, alter table, drop table, etc.), generar un **backup** (p. ej. `pg_dump` si se usa PostgreSQL).
+  
    - Conservar un histórico de backups (idealmente, versionados por fecha).
    - Si el cambio falla, restaurar la base anterior y documentar el incidente.
 

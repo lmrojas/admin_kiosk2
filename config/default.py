@@ -4,19 +4,36 @@
 
 import os
 from datetime import timedelta
+from app.services.config_service import config_service
 
 class Config:
     """Clase base de configuración."""
     
     # Configuración base
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-highly-secret'
     
+    # Configuración de archivos estáticos y templates
+    STATIC_FOLDER = os.path.join(BASE_DIR, 'app', 'static')
+    TEMPLATE_FOLDER = os.path.join(BASE_DIR, 'app', 'templates')
+    
+    # Obtener configuraciones del servicio
+    security_config = config_service.get_security_config()
+    
     # Configuración de sesión
-    SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    SESSION_COOKIE_SECURE = security_config['SESSION']['SESSION_COOKIE_SECURE']
+    SESSION_COOKIE_HTTPONLY = security_config['SESSION']['SESSION_COOKIE_HTTPONLY']
+    SESSION_COOKIE_SAMESITE = security_config['SESSION']['SESSION_COOKIE_SAMESITE']
+    PERMANENT_SESSION_LIFETIME = security_config['SESSION']['PERMANENT_SESSION_LIFETIME']
+    
+    # Configuración de CSRF
+    WTF_CSRF_ENABLED = security_config['CSRF_CONFIG']['WTF_CSRF_ENABLED']
+    WTF_CSRF_SECRET_KEY = security_config['CSRF_CONFIG']['WTF_CSRF_SECRET_KEY']
+    WTF_CSRF_TIME_LIMIT = security_config['CSRF_CONFIG']['WTF_CSRF_TIME_LIMIT']
+    WTF_CSRF_SSL_STRICT = security_config['CSRF_CONFIG']['WTF_CSRF_SSL_STRICT']
+    
+    # Headers de seguridad
+    SECURITY_HEADERS = security_config['HEADERS']
     
     # Configuración de base de datos PostgreSQL
     DB_USER = os.environ.get('DB_USER', 'postgres')
@@ -82,19 +99,6 @@ class Config:
     SECURITY_SEND_REGISTER_EMAIL = True
     SECURITY_RECOVERABLE = True
     SECURITY_CHANGEABLE = True
-    
-    # Configuración CSRF
-    WTF_CSRF_ENABLED = True
-    WTF_CSRF_TIME_LIMIT = 3600  # 1 hora
-    
-    # Headers de seguridad
-    SECURITY_HEADERS = {
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'SAMEORIGIN',
-        'X-XSS-Protection': '1; mode=block',
-        'Content-Security-Policy': "default-src 'self'"
-    }
     
     # Configuración de migraciones
     FLASK_APP = 'app'

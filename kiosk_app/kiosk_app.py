@@ -1,202 +1,218 @@
 """
-Módulo para la simulación de kiosks individuales.
-Maneja la lógica de generación de datos y comportamiento de cada kiosk.
+Módulo para envío de datos del kiosk
 """
-import os
-import json
-import random
-import logging
-from datetime import datetime
-import psutil
-import socket
-import uuid
-from typing import Dict, Any, Optional
-from .anomaly_simulator import AnomalySimulator
 
+import os
+import logging
+import platform
+import psutil
+import netifaces
+import requests
+from datetime import datetime
+import time
+from zoneinfo import ZoneInfo
+from dataclasses import dataclass
+from kiosk_behavior_simulator import (
+    KioskBehaviorSimulator, 
+    NetworkSimConfig,
+    HardwareSimConfig,
+    SensorSimConfig
+)
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class KioskApp:
-    """Clase que simula el comportamiento de un kiosk individual"""
+@dataclass
+class KioskConfig:
+    """Configuración básica de un kiosk"""
+    serial: str
+    name: str
+    location: dict
+    timezone: str = "UTC"  # Zona horaria por defecto
+
+class Kiosk:
+    """Simulador de kiosk que envía datos al servidor central"""
     
-    # Estados válidos según el modelo de BD
-    VALID_STATES = ['active', 'offline', 'blocked', 'maintenance', 'error']
-    
-    def __init__(self, config: Dict[str, Any]):
-        self.serial = config['serial']
-        self.name = config['name']
-        self.location = config['location']
-        self.status = config.get('status', 'offline')
-        self.coordinates = config.get('coordinates', {
-            'assigned': {'latitude': None, 'longitude': None},
-            'reported': {'latitude': None, 'longitude': None}
-        })
-        self.last_update = datetime.utcnow()
-        self.hardware_info = config.get('hardware', self._get_hardware_info())
-        self.sensors = self._initialize_sensors()
-        self.anomaly_simulator = AnomalySimulator()
+    def __init__(self, config: KioskConfig):
+        """Inicializa el simulador con la configuración proporcionada"""
+        self.config = config
+        self.timezone = ZoneInfo(config.timezone)
+        self.is_registered = False
+        self.socket_id = None
         
-    def _get_hardware_info(self) -> Dict[str, Any]:
-        """Obtiene información real del hardware"""
-        return {
-            'cpu_model': 'Simulated CPU',
-            'ram_total': psutil.virtual_memory().total / (1024 * 1024 * 1024),  # GB
-            'storage_total': psutil.disk_usage('/').total / (1024 * 1024 * 1024),  # GB
-            'ip_address': socket.gethostbyname(socket.gethostname()),
-            'mac_address': uuid.getnode().to_bytes(6, 'big').hex(':')
+        # Configuración inicial para el simulador de comportamiento
+        initial_config = {
+            'network': NetworkSimConfig(
+                base_signal_quality=95.0,
+                base_latency=20.0,
+                base_speed=100000000,
+                packet_loss_probability=0.001
+            ),
+            'hardware': HardwareSimConfig(
+                base_cpu_usage=30.0,
+                base_memory_usage=40.0,
+                base_cpu_temp=45.0
+            ),
+            'sensors': SensorSimConfig(
+                base_temperature=25.0,
+                base_humidity=60.0,
+                base_voltage=220.0
+            ),
+            'location': config.location  # Agregando la ubicación desde la configuración del kiosk
         }
         
-    def _initialize_sensors(self) -> Dict[str, Dict[str, Any]]:
-        """Inicializa los sensores con rangos realistas"""
-        return {
-            'temperature': {
-                'value': random.uniform(18, 25),
-                'unit': 'C',
-                'min': 15,
-                'max': 35,
-                'variation': 0.5
+        self.behavior_simulator = KioskBehaviorSimulator(initial_config)
+        self._initialize_hardware_info()
+        
+    def _initialize_hardware_info(self):
+        """Inicializa la información de hardware del kiosk"""
+        self.hardware_info = {
+            'os': {
+                'name': platform.system(),
+                'version': platform.version(),
+                'platform': platform.platform()
             },
-            'humidity': {
-                'value': random.uniform(40, 60),
-                'unit': '%',
-                'min': 30,
-                'max': 80,
-                'variation': 2
+            'memory': {
+                'total': psutil.virtual_memory().total / (1024 ** 3)  # GB
             },
-            'cpu_usage': {
-                'value': random.uniform(10, 30),
-                'unit': '%',
-                'min': 0,
-                'max': 100,
-                'variation': 5
-            },
-            'memory_usage': {
-                'value': random.uniform(20, 40),
-                'unit': '%',
-                'min': 0,
-                'max': 100,
-                'variation': 3
-            },
-            'network_latency': {
-                'value': random.uniform(5, 50),
-                'unit': 'ms',
-                'min': 1,
-                'max': 200,
-                'variation': 10
+            'network': {
+                'interfaces': [i for i in netifaces.interfaces() if i != 'lo'],
+                'mac_address': self._get_mac_address()
             }
         }
-        
-    def update_sensors(self):
-        """Actualiza todos los sensores"""
-        for name, sensor in self.sensors.items():
-            variation = random.uniform(-sensor['variation'], sensor['variation'])
-            sensor['value'] = max(sensor['min'], min(sensor['max'], sensor['value'] + variation))
-        self.last_update = datetime.utcnow()
-        
-    def get_telemetry_data(self) -> Dict[str, Any]:
-        """Genera datos de telemetría según el formato esperado por el sistema central"""
-        self.update_sensors()
-        
-        data = {
-            'kiosk_id': self.serial,
-            'name': self.name,
-            'timestamp': self.last_update.isoformat(),
-            'status': self.status,
-            'location': self.location,
-            'coordinates': self.coordinates,
-            'hardware_info': self.hardware_info,
-            'sensors': {name: {'value': sensor['value'], 'unit': sensor['unit']} 
-                       for name, sensor in self.sensors.items()}
-        }
-        
-        # Aplicar anomalías si existen
-        return self.anomaly_simulator.apply_anomalies(self.serial, data)
-        
-    def process_command(self, command: Dict[str, Any]) -> Dict[str, Any]:
-        """Procesa comandos recibidos del sistema central"""
-        command_type = command.get('type')
-        command_id = command.get('command_id')
-        
-        response = {
-            'command_id': command_id,
-            'kiosk_id': self.serial,
-            'timestamp': datetime.utcnow().isoformat(),
-            'status': 'error',
-            'message': 'Comando no reconocido'
-        }
-        
-        if command_type == 'status_update':
-            new_status = command.get('status')
-            if new_status in self.VALID_STATES:
-                self.status = new_status
-                response.update({
-                    'status': 'success', 
-                    'message': f'Estado actualizado a: {self.status}'
-                })
-                
-        elif command_type == 'get_telemetry':
-            response.update({
-                'status': 'success',
-                'message': 'Telemetría obtenida',
-                'data': self.get_telemetry_data()
-            })
-            
-        elif command_type == 'start_anomaly':
-            anomaly_type = command.get('anomaly_type')
-            duration = command.get('duration_minutes', 30)
-            try:
-                self.anomaly_simulator.start_anomaly(self.serial, anomaly_type, duration)
-                response.update({
-                    'status': 'success',
-                    'message': f'Anomalía {anomaly_type} iniciada'
-                })
-            except ValueError as e:
-                response.update({
-                    'message': str(e)
-                })
-                
-        elif command_type == 'stop_anomaly':
-            self.anomaly_simulator.stop_anomaly(self.serial)
-            response.update({
-                'status': 'success',
-                'message': 'Anomalía detenida'
-            })
-            
-        elif command_type == 'random_anomaly':
-            self.anomaly_simulator.random_anomaly(self.serial)
-            response.update({
-                'status': 'success',
-                'message': 'Anomalía aleatoria iniciada'
-            })
-            
-        return response
-
-    @classmethod
-    def initialize_instances(cls, config_dir: str) -> Dict[str, 'KioskApp']:
-        """Inicializa múltiples instancias de kiosks desde archivos de configuración"""
-        instances = {}
-        
+    
+    def _get_mac_address(self):
+        """Obtiene la dirección MAC de la interfaz principal"""
         try:
-            # Listar todos los archivos .json de configuración
-            config_files = [f for f in os.listdir(config_dir) 
-                          if f.endswith('.json') and f != 'kiosks_summary.json']
-            
-            logger.info(f"Encontrados {len(config_files)} archivos de configuración")
-            
-            for config_file in config_files:
-                file_path = os.path.join(config_dir, config_file)
-                try:
-                    with open(file_path, 'r') as f:
-                        kiosk_config = json.load(f)
-                        if isinstance(kiosk_config, dict) and 'serial' in kiosk_config:
-                            kiosk = cls(kiosk_config)
-                            instances[kiosk.serial] = kiosk  # Usamos serial como clave
-                            logger.info(f"Kiosk inicializado: {kiosk.name} ({kiosk.serial})")
-                except Exception as e:
-                    logger.error(f"Error leyendo configuración {config_file}: {str(e)}")
-                    continue
-                    
-            return instances
-            
+            interfaces = netifaces.interfaces()
+            for interface in interfaces:
+                if interface != 'lo':
+                    addrs = netifaces.ifaddresses(interface)
+                    if netifaces.AF_LINK in addrs:
+                        return addrs[netifaces.AF_LINK][0]['addr']
         except Exception as e:
-            logger.error(f"Error inicializando instancias: {str(e)}")
-            return {} 
+            logger.error(f"Error obteniendo MAC address: {str(e)}")
+            return None
+
+    def get_registration_data(self) -> dict:
+        """Obtiene los datos necesarios para registrar el kiosk"""
+        return {
+            'serial': self.config.serial,
+            'name': self.config.name,
+            'location': self.config.location,
+            'timezone': self.config.timezone,
+            'hardware_info': self.hardware_info,
+            'registration_time': datetime.now(self.timezone).isoformat()
+        }
+        
+    def get_telemetry_data(self) -> dict:
+        """Obtiene los datos de telemetría simulados"""
+        return self.behavior_simulator.get_simulated_data()
+        
+    def process_command(self, command: str, params: dict) -> dict:
+        """Procesa un comando recibido del servidor"""
+        logger.info(f"Procesando comando {command} con parámetros {params}")
+        # Aquí se implementaría la lógica para procesar diferentes comandos
+        return {
+            'status': 'success',
+            'message': f'Comando {command} procesado correctamente'
+        }
+
+    def get_telemetry(self):
+        """Obtiene datos de telemetría simulados"""
+        simulated_data = self.behavior_simulator.get_simulated_data()
+        time_info = self._get_local_time()
+        
+        return {
+            # Identificación
+            "serial": self.config.serial,
+            "name": self.config.name,
+            "network": self._get_network_info(),
+            
+            # Estado del Sistema
+            "system_status": {
+                "os_name": platform.system(),
+                "os_version": platform.version(),
+                "uptime": time.time(),
+                "local_time": time_info["local_time"],
+                "timezone": time_info["timezone"],
+                "utc_offset": time_info["utc_offset"]
+            },
+            
+            # Recursos Hardware
+            "hardware": simulated_data["hardware"],
+            
+            # Sensores
+            "sensors": simulated_data["sensors"],
+            
+            # Geolocalización
+            "geolocation": self._get_geolocation(),
+            
+            # Timestamp UTC
+            "timestamp": datetime.now(ZoneInfo("UTC")).isoformat()
+        }
+    
+    def _get_local_time(self) -> dict:
+        """Obtiene información de hora local"""
+        now = datetime.now(self.timezone)
+        return {
+            "local_time": now.isoformat(),
+            "timezone": str(self.timezone),
+            "utc_offset": now.utcoffset().total_seconds() / 3600
+        }
+        
+    def _get_network_info(self) -> dict:
+        """Obtiene información de red"""
+        try:
+            interfaces = netifaces.interfaces()
+            active_interface = None
+            
+            for iface in interfaces:
+                if iface != 'lo':
+                    addrs = netifaces.ifaddresses(iface)
+                    if netifaces.AF_INET in addrs:
+                        active_interface = iface
+                        break
+            
+            if active_interface:
+                addrs = netifaces.ifaddresses(active_interface)
+                ipv4 = addrs[netifaces.AF_INET][0]
+                mac = addrs[netifaces.AF_LINK][0]['addr'] if netifaces.AF_LINK in addrs else None
+                
+                # Obtener IP pública
+                try:
+                    public_ip = requests.get('https://api.ipify.org').text
+                except:
+                    public_ip = None
+                
+                # Obtener métricas simuladas
+                network_metrics = self.behavior_simulator.get_simulated_data()["network"]
+                
+                return {
+                    "local_ip": ipv4.get('addr'),
+                    "public_ip": public_ip,
+                    "mac_address": mac,
+                    "interface": active_interface,
+                    "signal_quality": network_metrics["signal_quality"],
+                    "connection_speed": network_metrics["connection_speed"],
+                    "latency": network_metrics["latency"],
+                    "connection_status": network_metrics["connection_status"],
+                    "packets": {
+                        "sent": network_metrics["packets_sent"],
+                        "received": network_metrics["packets_received"],
+                        "lost": network_metrics["packets_lost"]
+                    }
+                }
+            return {"error": "No active network interface found"}
+        except Exception as e:
+            logger.error(f"Error getting network info: {str(e)}")
+            return {"error": str(e)}
+
+    def _get_geolocation(self) -> dict:
+        """Obtiene información de geolocalización"""
+        geo_data = self.behavior_simulator.get_simulated_data()["geolocation"]
+        return {
+            "latitude": geo_data["latitude"],
+            "longitude": geo_data["longitude"],
+            "timestamp": datetime.now(self.timezone).isoformat()
+        } 
